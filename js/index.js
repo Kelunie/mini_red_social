@@ -1,6 +1,3 @@
-// Historia 1: Publicar un mensaje
-// Por ahora las publicaciones solo viven en memoria (array).
-// Historia 4 se encarga de guardarlas en LocalStorage.
 
 const publicaciones = [];
 
@@ -24,10 +21,10 @@ form.addEventListener("submit", function (evento) {
     id: Date.now(),
     nombre: nombre,
     mensaje: mensaje,
-    likes: 0, // Historia 3 lo va a usar
+    likes: 0, 
   };
 
-  publicaciones.unshift(publicacion); // los nuevos van primero (Historia 2)
+  publicaciones.unshift(publicacion); 
   renderPublicaciones();
 
   form.reset();
