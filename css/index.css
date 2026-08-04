@@ -53,6 +53,94 @@ body {
   margin: 0.2rem 0 0;
 }
 
+.nota-acciones {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 999px;
+  background: #f7f2ea;
+  border: 1px solid #ebdfcf;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.reaction-main-btn {
+  background: #fff;
+  border: 1px solid #d9662e;
+  color: #d9662e;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.reaction-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: all 0.2s ease;
+  position: absolute;
+  left: 0;
+  top: -2.8rem;
+  background: #fff;
+  padding: 0.35rem;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.nota-acciones:hover .reaction-menu,
+.nota-acciones:focus-within .reaction-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.reaccion-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.reaction-btn {
+  background: transparent;
+  border: none;
+  color: #d9662e;
+  border-radius: 50%;
+  width: 1.7rem;
+  height: 1.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: transform 0.15s ease;
+}
+
+.reaction-btn:hover {
+  transform: scale(1.1);
+}
+
+.reaction-btn.active {
+  background-color: #d9662e;
+  color: #fff;
+}
+
+.contador-reaccion {
+  color: #4b4b4b;
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-width: 0.9rem;
+  text-align: center;
+}
+
 .mensaje-vacio {
   color: #888;
   text-align: center;
