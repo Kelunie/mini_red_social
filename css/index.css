@@ -1,0 +1,59 @@
+body {
+  background-color: #fdf6ec;
+}
+
+.container {
+  max-width: 600px;
+}
+
+.titulo-principal {
+  color: #d9662e;
+  margin-top: 1.5rem;
+}
+
+.tarjeta-form {
+  background: #fff;
+  border: 1px solid #e0d5c0;
+  border-radius: 6px;
+  padding: 1.2rem;
+}
+
+.btn-publicar {
+  background-color: #d9662e;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 1.2rem;
+  border-radius: 4px;
+}
+
+.btn-publicar:hover {
+  background-color: #c1551f;
+}
+
+.titulo-muro {
+  color: #444;
+}
+
+#lista-publicaciones .nota {
+  background: #fff;
+  border: 1px solid #e0d5c0;
+  border-left: 4px solid #d9662e;
+  border-radius: 4px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.nota-nombre {
+  font-weight: bold;
+  color: #333;
+}
+
+.nota-mensaje {
+  white-space: pre-wrap;
+  margin: 0.2rem 0 0;
+}
+
+.mensaje-vacio {
+  color: #888;
+  text-align: center;
+}
