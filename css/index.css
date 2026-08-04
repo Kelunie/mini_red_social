@@ -53,6 +53,12 @@ body {
   margin: 0.2rem 0 0;
 }
 
+.nota-fecha {
+  color: #999;
+  font-size: 0.78rem;
+  margin: 0.35rem 0 0;
+}
+
 .nota-acciones {
   position: relative;
   display: inline-flex;
