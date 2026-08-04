@@ -33,7 +33,19 @@ function normalizarPublicaciones(items) {
         love: typeof reactions.love === "number" ? reactions.love : 0,
       },
       userReactions: item.userReactions || {},
+      fecha: item.fecha || new Date().toISOString(),
     };
+  });
+}
+
+function formatearFecha(fechaIso) {
+  const fecha = new Date(fechaIso);
+  return fecha.toLocaleString("es-CR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -97,6 +109,7 @@ form.addEventListener("submit", function (evento) {
       love: 5,
     },
     userReactions: {},
+    fecha: new Date().toISOString(),
   };
 
   publicaciones.unshift(publicacion);
@@ -137,6 +150,10 @@ function renderPublicaciones() {
     const mensaje = document.createElement("p");
     mensaje.className = "nota-mensaje";
     mensaje.textContent = publicacion.mensaje;
+
+    const fecha = document.createElement("p");
+    fecha.className = "nota-fecha";
+    fecha.textContent = formatearFecha(publicacion.fecha);
 
     const acciones = document.createElement("div");
     acciones.className = "nota-acciones";
@@ -196,6 +213,7 @@ function renderPublicaciones() {
 
     nota.appendChild(nombre);
     nota.appendChild(mensaje);
+    nota.appendChild(fecha);
     nota.appendChild(acciones);
 
     listaPublicaciones.appendChild(nota);
