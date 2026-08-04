@@ -1,5 +1,15 @@
+const STORAGE_KEY = "publicaciones";
 
-const publicaciones = [];
+function cargarPublicaciones() {
+  const datos = localStorage.getItem(STORAGE_KEY);
+  return datos ? JSON.parse(datos) : [];
+}
+
+function guardarPublicaciones() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(publicaciones));
+}
+
+let publicaciones = cargarPublicaciones();
 
 const form = document.getElementById("form-publicacion");
 const inputNombre = document.getElementById("input-nombre");
@@ -21,10 +31,11 @@ form.addEventListener("submit", function (evento) {
     id: Date.now(),
     nombre: nombre,
     mensaje: mensaje,
-    likes: 0, 
+    likes: 0,
   };
 
-  publicaciones.unshift(publicacion); 
+  publicaciones.unshift(publicacion);
+  guardarPublicaciones();
   renderPublicaciones();
 
   form.reset();
