@@ -151,3 +151,20 @@ body {
   color: #888;
   text-align: center;
 }
+
+.btn-eliminar {
+  display: block;
+  margin-top: 0.6rem;
+  background: transparent;
+  border: 1px solid #c1551f;
+  color: #c1551f;
+  border-radius: 4px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn-eliminar:hover {
+  background-color: #c1551f;
+  color: #fff;
+}
