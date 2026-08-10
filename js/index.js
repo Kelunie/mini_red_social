@@ -130,8 +130,7 @@ function eliminarPublicacion(id) {
     return item.id !== id;
   });
 
-  // TODO (segunda mitad): persistir el borrado con guardarPublicaciones()
-  // para que sobreviva un reload.
+  guardarPublicaciones();
   renderPublicaciones();
 }
 
