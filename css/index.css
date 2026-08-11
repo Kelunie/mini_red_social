@@ -152,9 +152,14 @@ body {
   text-align: center;
 }
 
-.btn-eliminar {
-  display: block;
+.botones-gestion {
+  display: flex;
+  gap: 0.5rem;
   margin-top: 0.6rem;
+}
+
+.btn-eliminar,
+.btn-editar {
   background: transparent;
   border: 1px solid #c1551f;
   color: #c1551f;
@@ -164,7 +169,52 @@ body {
   cursor: pointer;
 }
 
-.btn-eliminar:hover {
+.btn-eliminar:hover,
+.btn-editar:hover {
   background-color: #c1551f;
   color: #fff;
+}
+
+.textarea-edicion {
+  margin-top: 0.4rem;
+}
+
+.error-edicion {
+  display: block;
+  color: #c1551f;
+  margin-top: 0.3rem;
+}
+
+.botones-edicion {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.btn-guardar-edicion {
+  background-color: #d9662e;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn-guardar-edicion:hover {
+  background-color: #c1551f;
+}
+
+.btn-cancelar-edicion {
+  background: transparent;
+  border: 1px solid #999;
+  color: #666;
+  border-radius: 4px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn-cancelar-edicion:hover {
+  background-color: #eee;
 }
