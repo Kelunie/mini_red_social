@@ -185,9 +185,19 @@ listaPublicaciones.addEventListener("click", function (evento) {
     }
 
     errorEdicion.classList.add("d-none");
-    // TODO (segunda mitad): actualizar el objeto existente en `publicaciones`
-    // (conservando nombre, fecha y likes), llamar guardarPublicaciones()
-    // y salir del modo edición con cancelarEdicion().
+
+    const idEditado = Number(botonGuardarEdicion.dataset.publicacionId);
+    const publicacion = publicaciones.find(function (item) {
+      return item.id === idEditado;
+    });
+
+    if (publicacion) {
+      publicacion.mensaje = nuevoMensaje;
+    }
+
+    guardarPublicaciones();
+    publicacionEnEdicionId = null;
+    renderPublicaciones();
     return;
   }
 
