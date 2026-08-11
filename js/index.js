@@ -103,12 +103,27 @@ function alternarReaccion(id, tipo) {
 let publicaciones = normalizarPublicaciones(cargarPublicaciones());
 let publicacionEnEdicionId = null;
 let comentarioEnEdicion = null;
+const LIMITE_MENSAJE = 200;
+const LIMITE_COMENTARIO = LIMITE_MENSAJE;
 
 const form = document.getElementById("form-publicacion");
 const inputNombre = document.getElementById("input-nombre");
 const inputMensaje = document.getElementById("input-mensaje");
 const listaPublicaciones = document.getElementById("lista-publicaciones");
 const tituloMuro = document.querySelector(".titulo-muro");
+
+inputMensaje.maxLength = LIMITE_MENSAJE;
+
+const contadorMensajePublicacion = document.createElement("small");
+contadorMensajePublicacion.className = "contador-mensaje-publicacion text-muted d-block mt-1";
+contadorMensajePublicacion.setAttribute("aria-live", "polite");
+contadorMensajePublicacion.setAttribute("data-contador", "mensaje-publicacion");
+inputMensaje.insertAdjacentElement("afterend", contadorMensajePublicacion);
+
+const errorLongitudPublicacion = document.createElement("small");
+errorLongitudPublicacion.className = "text-danger d-none d-block mt-1";
+errorLongitudPublicacion.setAttribute("data-error", "mensaje-publicacion");
+contadorMensajePublicacion.insertAdjacentElement("afterend", errorLongitudPublicacion);
 
 const contenedorBusqueda = document.createElement("div");
 contenedorBusqueda.className = "mb-3";
@@ -133,8 +148,8 @@ botonBusqueda.type = "submit";
 botonBusqueda.className = "btn btn-outline-secondary";
 botonBusqueda.textContent = "Buscar";
 
-const mensajeBusqueda = document.createElement("div");
-mensajeBusqueda.className = "alert alert-warning py-2 mb-3 d-none";
+const mensajeBusqueda = document.createElement("small");
+mensajeBusqueda.className = "mensaje-busqueda d-none d-block mt-1";
 mensajeBusqueda.setAttribute("role", "status");
 mensajeBusqueda.setAttribute("aria-live", "polite");
 
@@ -154,6 +169,48 @@ if (tituloMuro && tituloMuro.parentElement) {
 function normalizarTexto(texto) {
   return String(texto || "").trim().toLowerCase();
 }
+
+function obtenerLongitudTexto(texto) {
+  return String(texto || "").length;
+}
+
+function actualizarContadorCaracteres(elemento, limite, destino) {
+  const restantes = limite - obtenerLongitudTexto(elemento.value);
+  destino.textContent = `${restantes} caracteres restantes`;
+  destino.classList.toggle("text-danger", restantes < 0);
+  destino.classList.toggle("text-warning", restantes >= 0 && restantes <= 20);
+  destino.classList.toggle("text-muted", restantes > 20);
+}
+
+function mostrarErrorLongitudPublicacion(mensaje) {
+  errorLongitudPublicacion.textContent = mensaje;
+  errorLongitudPublicacion.classList.remove("d-none");
+}
+
+function ocultarErrorLongitudPublicacion() {
+  errorLongitudPublicacion.textContent = "";
+  errorLongitudPublicacion.classList.add("d-none");
+}
+
+function mostrarErrorLongitudEdicion(errorElemento, mensaje) {
+  errorElemento.textContent = mensaje;
+  errorElemento.classList.remove("d-none");
+}
+
+function ocultarErrorLongitudEdicion(errorElemento) {
+  errorElemento.textContent = "";
+  errorElemento.classList.add("d-none");
+}
+
+function esTextoValidoConLimite(texto, limite) {
+  return obtenerLongitudTexto(texto) <= limite;
+}
+
+function obtenerMensajeRestante(texto, limite) {
+  return `${limite - obtenerLongitudTexto(texto)} caracteres restantes`;
+}
+
+actualizarContadorCaracteres(inputMensaje, LIMITE_MENSAJE, contadorMensajePublicacion);
 
 function obtenerPublicacionesFiltradas() {
   const terminoBusqueda = normalizarTexto(inputBusqueda.value);
@@ -188,12 +245,22 @@ form.addEventListener("submit", function (evento) {
   evento.preventDefault();
 
   const nombre = inputNombre.value.trim();
-  const mensaje = inputMensaje.value.trim();
+  const mensajeIngresado = inputMensaje.value;
+  const mensaje = mensajeIngresado.trim();
+
+  if (!esTextoValidoConLimite(mensajeIngresado, LIMITE_MENSAJE)) {
+    mostrarErrorLongitudPublicacion(`El mensaje no puede superar los ${LIMITE_MENSAJE} caracteres.`);
+    inputMensaje.focus();
+    return;
+  }
 
   if (nombre === "" || mensaje === "") {
+    ocultarErrorLongitudPublicacion();
     alert("El nombre y el mensaje son obligatorios.");
     return;
   }
+
+  ocultarErrorLongitudPublicacion();
 
   const publicacion = {
     id: Date.now() + Math.floor(Math.random() * 1000),
@@ -217,6 +284,12 @@ form.addEventListener("submit", function (evento) {
   renderPublicaciones();
 
   form.reset();
+  actualizarContadorCaracteres(inputMensaje, LIMITE_MENSAJE, contadorMensajePublicacion);
+});
+
+inputMensaje.addEventListener("input", function () {
+  actualizarContadorCaracteres(inputMensaje, LIMITE_MENSAJE, contadorMensajePublicacion);
+  ocultarErrorLongitudPublicacion();
 });
 
 inputBusqueda.addEventListener("input", function () {
@@ -376,16 +449,22 @@ listaPublicaciones.addEventListener("click", function (evento) {
     const nota = botonGuardarEdicion.closest(".nota");
     const textarea = nota.querySelector(".textarea-edicion");
     const errorEdicion = nota.querySelector(".error-edicion");
-    const nuevoMensaje = textarea.value.trim();
+    const nuevoMensajeIngresado = textarea.value;
+    const nuevoMensaje = nuevoMensajeIngresado.trim();
 
-    if (nuevoMensaje === "") {
-      errorEdicion.textContent = "El mensaje no puede quedar vacío.";
-      errorEdicion.classList.remove("d-none");
+    if (!esTextoValidoConLimite(nuevoMensajeIngresado, LIMITE_MENSAJE)) {
+      mostrarErrorLongitudEdicion(errorEdicion, `El mensaje no puede superar los ${LIMITE_MENSAJE} caracteres.`);
       textarea.focus();
       return;
     }
 
-    errorEdicion.classList.add("d-none");
+    if (nuevoMensaje === "") {
+      mostrarErrorLongitudEdicion(errorEdicion, "El mensaje no puede quedar vacío.");
+      textarea.focus();
+      return;
+    }
+
+    ocultarErrorLongitudEdicion(errorEdicion);
 
     const idEditado = Number(botonGuardarEdicion.dataset.publicacionId);
     const publicacion = publicaciones.find(function (item) {
@@ -433,7 +512,15 @@ listaPublicaciones.addEventListener("click", function (evento) {
     const itemComentario = botonGuardarComentario.closest(".comentario-item");
     const textareaComentario = itemComentario.querySelector(".textarea-edicion-comentario");
     const errorEdicionComentario = itemComentario.querySelector(".error-edicion-comentario");
-    const nuevoTexto = textareaComentario.value.trim();
+    const nuevoTextoIngresado = textareaComentario.value;
+    const nuevoTexto = nuevoTextoIngresado.trim();
+
+    if (!esTextoValidoConLimite(nuevoTextoIngresado, LIMITE_COMENTARIO)) {
+      errorEdicionComentario.textContent = `El comentario no puede superar los ${LIMITE_COMENTARIO} caracteres.`;
+      errorEdicionComentario.classList.remove("d-none");
+      textareaComentario.focus();
+      return;
+    }
 
     if (nuevoTexto === "") {
       errorEdicionComentario.textContent = "El comentario no puede quedar vacío.";
@@ -459,7 +546,15 @@ listaPublicaciones.addEventListener("click", function (evento) {
     const errorComentario = nota.querySelector(".error-comentario");
 
     const nombreComentario = inputNombreComentario.value.trim();
-    const textoComentario = inputTextoComentario.value.trim();
+    const textoComentarioIngresado = inputTextoComentario.value;
+    const textoComentario = textoComentarioIngresado.trim();
+
+    if (!esTextoValidoConLimite(textoComentarioIngresado, LIMITE_COMENTARIO)) {
+      errorComentario.textContent = `El comentario no puede superar los ${LIMITE_COMENTARIO} caracteres.`;
+      errorComentario.classList.remove("d-none");
+      inputTextoComentario.focus();
+      return;
+    }
 
     if (nombreComentario === "" || textoComentario === "") {
       errorComentario.textContent = "El nombre y el comentario son obligatorios.";
@@ -682,10 +777,21 @@ function renderPublicaciones() {
         const textareaEdicionComentario = document.createElement("textarea");
         textareaEdicionComentario.className = "form-control textarea-edicion-comentario";
         textareaEdicionComentario.rows = 2;
+        textareaEdicionComentario.maxLength = LIMITE_COMENTARIO;
         textareaEdicionComentario.value = comentario.texto;
+
+        const contadorEdicionComentario = document.createElement("small");
+        contadorEdicionComentario.className = "contador-edicion-comentario text-muted d-block";
+        contadorEdicionComentario.textContent = obtenerMensajeRestante(textareaEdicionComentario.value, LIMITE_COMENTARIO);
 
         const errorEdicionComentario = document.createElement("small");
         errorEdicionComentario.className = "error-edicion-comentario d-none";
+
+        textareaEdicionComentario.addEventListener("input", function () {
+          actualizarContadorCaracteres(textareaEdicionComentario, LIMITE_COMENTARIO, contadorEdicionComentario);
+          errorEdicionComentario.textContent = "";
+          errorEdicionComentario.classList.add("d-none");
+        });
 
         const botonesEdicionComentario = document.createElement("div");
         botonesEdicionComentario.className = "botones-edicion-comentario";
@@ -708,6 +814,7 @@ function renderPublicaciones() {
         botonesEdicionComentario.appendChild(botonCancelarComentario);
 
         itemComentario.appendChild(textareaEdicionComentario);
+        itemComentario.appendChild(contadorEdicionComentario);
         itemComentario.appendChild(errorEdicionComentario);
         itemComentario.appendChild(botonesEdicionComentario);
         itemComentario.appendChild(fechaComentario);
@@ -753,6 +860,17 @@ function renderPublicaciones() {
     inputTextoComentario.type = "text";
     inputTextoComentario.className = "form-control input-texto-comentario";
     inputTextoComentario.placeholder = "Escribe un comentario...";
+    inputTextoComentario.maxLength = LIMITE_COMENTARIO;
+
+    const contadorComentario = document.createElement("small");
+    contadorComentario.className = "contador-comentario text-muted d-block";
+    contadorComentario.textContent = obtenerMensajeRestante(inputTextoComentario.value, LIMITE_COMENTARIO);
+
+    inputTextoComentario.addEventListener("input", function () {
+      actualizarContadorCaracteres(inputTextoComentario, LIMITE_COMENTARIO, contadorComentario);
+      errorComentario.textContent = "";
+      errorComentario.classList.add("d-none");
+    });
 
     const botonComentar = document.createElement("button");
     botonComentar.type = "button";
@@ -765,6 +883,7 @@ function renderPublicaciones() {
 
     formComentario.appendChild(inputNombreComentario);
     formComentario.appendChild(inputTextoComentario);
+    formComentario.appendChild(contadorComentario);
     formComentario.appendChild(botonComentar);
     formComentario.appendChild(errorComentario);
 
@@ -776,10 +895,25 @@ function renderPublicaciones() {
       const textareaEdicion = document.createElement("textarea");
       textareaEdicion.className = "form-control textarea-edicion";
       textareaEdicion.rows = 3;
+      textareaEdicion.maxLength = LIMITE_MENSAJE;
       textareaEdicion.value = publicacion.mensaje;
+
+      const contadorEdicion = document.createElement("small");
+      contadorEdicion.className = "contador-edicion text-muted d-block mt-1";
+      contadorEdicion.textContent = obtenerMensajeRestante(textareaEdicion.value, LIMITE_MENSAJE);
 
       const errorEdicion = document.createElement("small");
       errorEdicion.className = "error-edicion d-none";
+
+      textareaEdicion.addEventListener("input", function () {
+        const longitudActual = obtenerLongitudTexto(textareaEdicion.value);
+
+        contadorEdicion.textContent = obtenerMensajeRestante(textareaEdicion.value, LIMITE_MENSAJE);
+        contadorEdicion.classList.toggle("text-danger", longitudActual > LIMITE_MENSAJE);
+        contadorEdicion.classList.toggle("text-warning", longitudActual <= LIMITE_MENSAJE && longitudActual > LIMITE_MENSAJE - 20);
+        contadorEdicion.classList.toggle("text-muted", longitudActual <= LIMITE_MENSAJE - 20);
+        ocultarErrorLongitudEdicion(errorEdicion);
+      });
 
       const botonesEdicion = document.createElement("div");
       botonesEdicion.className = "botones-edicion";
@@ -800,6 +934,7 @@ function renderPublicaciones() {
       botonesEdicion.appendChild(botonCancelarEdicion);
 
       nota.appendChild(textareaEdicion);
+      nota.appendChild(contadorEdicion);
       nota.appendChild(errorEdicion);
       nota.appendChild(botonesEdicion);
       nota.appendChild(fecha);
