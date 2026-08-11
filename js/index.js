@@ -15,7 +15,7 @@ function obtenerLikesIniciales() {
 
 function normalizarPublicaciones(items) {
   return items.map(function (item) {
-    const likes = typeof item.likes === "number" ? item.likes : 0;
+    const likes = typeof item.likes === "number" ? item.likes : obtenerLikesIniciales();
     const reactions = item.reactions || {
       like: 0,
       dislike: 0,
@@ -25,7 +25,7 @@ function normalizarPublicaciones(items) {
 
     return {
       ...item,
-      likes: likes > 0 ? likes : obtenerLikesIniciales(),
+      likes: likes,
       reactions: {
         like: typeof reactions.like === "number" ? reactions.like : 0,
         dislike: typeof reactions.dislike === "number" ? reactions.dislike : 0,
@@ -102,12 +102,12 @@ form.addEventListener("submit", function (evento) {
     id: Date.now() + Math.floor(Math.random() * 1000),
     nombre: nombre,
     mensaje: mensaje,
-    likes: obtenerLikesIniciales(),
+    likes: 0,
     reactions: {
-      like: 4,
-      dislike: 2,
-      angry: 3,
-      love: 5,
+      like: 0,
+      dislike: 0,
+      angry: 0,
+      love: 0,
     },
     userReactions: {},
     fecha: new Date().toISOString(),
