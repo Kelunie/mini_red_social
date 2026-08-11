@@ -86,6 +86,81 @@ const form = document.getElementById("form-publicacion");
 const inputNombre = document.getElementById("input-nombre");
 const inputMensaje = document.getElementById("input-mensaje");
 const listaPublicaciones = document.getElementById("lista-publicaciones");
+const tituloMuro = document.querySelector(".titulo-muro");
+
+const contenedorBusqueda = document.createElement("div");
+contenedorBusqueda.className = "mb-3";
+
+const etiquetaBusqueda = document.createElement("label");
+etiquetaBusqueda.className = "form-label fw-semibold";
+etiquetaBusqueda.setAttribute("for", "input-busqueda-publicaciones");
+etiquetaBusqueda.textContent = "Buscar publicaciones";
+
+const formBusqueda = document.createElement("form");
+formBusqueda.className = "d-flex gap-2 flex-column flex-sm-row";
+
+const inputBusqueda = document.createElement("input");
+inputBusqueda.type = "search";
+inputBusqueda.className = "form-control";
+inputBusqueda.id = "input-busqueda-publicaciones";
+inputBusqueda.placeholder = "Buscar por autor o contenido";
+inputBusqueda.setAttribute("aria-label", "Buscar por autor o contenido");
+
+const botonBusqueda = document.createElement("button");
+botonBusqueda.type = "submit";
+botonBusqueda.className = "btn btn-outline-secondary";
+botonBusqueda.textContent = "Buscar";
+
+const mensajeBusqueda = document.createElement("div");
+mensajeBusqueda.className = "alert alert-warning py-2 mb-3 d-none";
+mensajeBusqueda.setAttribute("role", "status");
+mensajeBusqueda.setAttribute("aria-live", "polite");
+
+formBusqueda.appendChild(inputBusqueda);
+formBusqueda.appendChild(botonBusqueda);
+contenedorBusqueda.appendChild(etiquetaBusqueda);
+contenedorBusqueda.appendChild(formBusqueda);
+
+if (tituloMuro && tituloMuro.parentElement) {
+  tituloMuro.insertAdjacentElement("afterend", contenedorBusqueda);
+  contenedorBusqueda.insertAdjacentElement("afterend", mensajeBusqueda);
+} else {
+  listaPublicaciones.parentElement.insertBefore(mensajeBusqueda, listaPublicaciones);
+  listaPublicaciones.parentElement.insertBefore(contenedorBusqueda, mensajeBusqueda);
+}
+
+function normalizarTexto(texto) {
+  return String(texto || "").trim().toLowerCase();
+}
+
+function obtenerPublicacionesFiltradas() {
+  const terminoBusqueda = normalizarTexto(inputBusqueda.value);
+
+  if (terminoBusqueda === "") {
+    return publicaciones;
+  }
+
+  return publicaciones.filter(function (publicacion) {
+    const nombre = normalizarTexto(publicacion.nombre);
+    const mensaje = normalizarTexto(publicacion.mensaje);
+
+    return nombre.includes(terminoBusqueda) || mensaje.includes(terminoBusqueda);
+  });
+}
+
+function actualizarEstadoBusqueda(cantidadResultados) {
+  const terminoBusqueda = normalizarTexto(inputBusqueda.value);
+  const sinCoincidencias = terminoBusqueda !== "" && cantidadResultados === 0;
+
+  if (sinCoincidencias) {
+    mensajeBusqueda.textContent = "No se encontraron coincidencias.";
+    mensajeBusqueda.classList.remove("d-none");
+    return;
+  }
+
+  mensajeBusqueda.textContent = "";
+  mensajeBusqueda.classList.add("d-none");
+}
 
 form.addEventListener("submit", function (evento) {
   evento.preventDefault();
@@ -118,6 +193,15 @@ form.addEventListener("submit", function (evento) {
   renderPublicaciones();
 
   form.reset();
+});
+
+inputBusqueda.addEventListener("input", function () {
+  renderPublicaciones();
+});
+
+formBusqueda.addEventListener("submit", function (evento) {
+  evento.preventDefault();
+  renderPublicaciones();
 });
 
 function eliminarPublicacion(id) {
@@ -213,14 +297,27 @@ listaPublicaciones.addEventListener("click", function (evento) {
 });
 
 function renderPublicaciones() {
+  const publicacionesFiltradas = obtenerPublicacionesFiltradas();
+  const terminoBusqueda = normalizarTexto(inputBusqueda.value);
+
   listaPublicaciones.innerHTML = "";
+
+  actualizarEstadoBusqueda(publicacionesFiltradas.length);
+
+  if (publicacionesFiltradas.length === 0) {
+    if (publicaciones.length === 0 && terminoBusqueda === "") {
+      listaPublicaciones.innerHTML = '<p class="mensaje-vacio">Todavía no hay publicaciones.</p>';
+    }
+
+    return;
+  }
 
   if (publicaciones.length === 0) {
     listaPublicaciones.innerHTML = '<p class="mensaje-vacio">Todavía no hay publicaciones.</p>';
     return;
   }
 
-  publicaciones.forEach(function (publicacion) {
+  publicacionesFiltradas.forEach(function (publicacion) {
     const nota = document.createElement("div");
     nota.className = "nota";
 
