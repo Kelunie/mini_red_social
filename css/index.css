@@ -218,3 +218,71 @@ body {
 .btn-cancelar-edicion:hover {
   background-color: #eee;
 }
+
+.seccion-comentarios {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #efe6d8;
+}
+
+.comentario-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+
+.comentario-nombre {
+  font-weight: bold;
+  color: #333;
+}
+
+.comentario-texto {
+  color: #444;
+}
+
+.comentario-fecha {
+  color: #999;
+  font-size: 0.72rem;
+  margin-left: auto;
+}
+
+.form-comentario {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.form-comentario .input-nombre-comentario {
+  flex: 0 0 30%;
+  font-size: 0.85rem;
+}
+
+.form-comentario .input-texto-comentario {
+  flex: 1 1 auto;
+  font-size: 0.85rem;
+}
+
+.btn-comentar {
+  background-color: #d9662e;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn-comentar:hover {
+  background-color: #c1551f;
+}
+
+.error-comentario {
+  display: block;
+  width: 100%;
+  color: #c1551f;
+  margin-top: 0.1rem;
+}

@@ -34,6 +34,7 @@ function normalizarPublicaciones(items) {
       },
       userReactions: item.userReactions || {},
       fecha: item.fecha || new Date().toISOString(),
+      comentarios: Array.isArray(item.comentarios) ? item.comentarios : [],
     };
   });
 }
@@ -111,6 +112,7 @@ form.addEventListener("submit", function (evento) {
     },
     userReactions: {},
     fecha: new Date().toISOString(),
+    comentarios: [],
   };
 
   publicaciones.unshift(publicacion);
@@ -129,6 +131,25 @@ function eliminarPublicacion(id) {
 
   publicaciones = publicaciones.filter(function (item) {
     return item.id !== id;
+  });
+
+  guardarPublicaciones();
+  renderPublicaciones();
+}
+
+function agregarComentario(id, nombreComentario, textoComentario) {
+  const publicacion = publicaciones.find(function (item) {
+    return item.id === id;
+  });
+
+  if (!publicacion) {
+    return;
+  }
+
+  publicacion.comentarios.push({
+    nombre: nombreComentario,
+    texto: textoComentario,
+    fecha: new Date().toISOString(),
   });
 
   guardarPublicaciones();
@@ -198,6 +219,30 @@ listaPublicaciones.addEventListener("click", function (evento) {
     guardarPublicaciones();
     publicacionEnEdicionId = null;
     renderPublicaciones();
+    return;
+  }
+
+  const botonComentar = evento.target.closest(".btn-comentar");
+
+  if (botonComentar) {
+    const nota = botonComentar.closest(".nota");
+    const inputNombreComentario = nota.querySelector(".input-nombre-comentario");
+    const inputTextoComentario = nota.querySelector(".input-texto-comentario");
+    const errorComentario = nota.querySelector(".error-comentario");
+
+    const nombreComentario = inputNombreComentario.value.trim();
+    const textoComentario = inputTextoComentario.value.trim();
+
+    if (nombreComentario === "" || textoComentario === "") {
+      errorComentario.textContent = "El nombre y el comentario son obligatorios.";
+      errorComentario.classList.remove("d-none");
+      return;
+    }
+
+    errorComentario.classList.add("d-none");
+
+    const idComentado = Number(botonComentar.dataset.publicacionId);
+    agregarComentario(idComentado, nombreComentario, textoComentario);
     return;
   }
 
@@ -314,6 +359,60 @@ function renderPublicaciones() {
     botonesGestion.appendChild(botonEditar);
     botonesGestion.appendChild(botonEliminar);
 
+    const seccionComentarios = document.createElement("div");
+    seccionComentarios.className = "seccion-comentarios";
+
+    publicacion.comentarios.forEach(function (comentario) {
+      const itemComentario = document.createElement("div");
+      itemComentario.className = "comentario-item";
+
+      const nombreComentario = document.createElement("span");
+      nombreComentario.className = "comentario-nombre";
+      nombreComentario.textContent = comentario.nombre;
+
+      const textoComentario = document.createElement("span");
+      textoComentario.className = "comentario-texto";
+      textoComentario.textContent = comentario.texto;
+
+      const fechaComentario = document.createElement("span");
+      fechaComentario.className = "comentario-fecha";
+      fechaComentario.textContent = formatearFecha(comentario.fecha);
+
+      itemComentario.appendChild(nombreComentario);
+      itemComentario.appendChild(textoComentario);
+      itemComentario.appendChild(fechaComentario);
+      seccionComentarios.appendChild(itemComentario);
+    });
+
+    const formComentario = document.createElement("div");
+    formComentario.className = "form-comentario";
+
+    const inputNombreComentario = document.createElement("input");
+    inputNombreComentario.type = "text";
+    inputNombreComentario.className = "form-control input-nombre-comentario";
+    inputNombreComentario.placeholder = "Tu nombre";
+
+    const inputTextoComentario = document.createElement("input");
+    inputTextoComentario.type = "text";
+    inputTextoComentario.className = "form-control input-texto-comentario";
+    inputTextoComentario.placeholder = "Escribe un comentario...";
+
+    const botonComentar = document.createElement("button");
+    botonComentar.type = "button";
+    botonComentar.className = "btn-comentar";
+    botonComentar.dataset.publicacionId = publicacion.id;
+    botonComentar.textContent = "Comentar";
+
+    const errorComentario = document.createElement("small");
+    errorComentario.className = "error-comentario d-none";
+
+    formComentario.appendChild(inputNombreComentario);
+    formComentario.appendChild(inputTextoComentario);
+    formComentario.appendChild(botonComentar);
+    formComentario.appendChild(errorComentario);
+
+    seccionComentarios.appendChild(formComentario);
+
     nota.appendChild(nombre);
 
     if (enEdicion) {
@@ -352,6 +451,7 @@ function renderPublicaciones() {
       nota.appendChild(fecha);
       nota.appendChild(acciones);
       nota.appendChild(botonesGestion);
+      nota.appendChild(seccionComentarios);
     }
 
     listaPublicaciones.appendChild(nota);
