@@ -80,6 +80,7 @@ function alternarReaccion(id, tipo) {
 }
 
 let publicaciones = normalizarPublicaciones(cargarPublicaciones());
+let publicacionEnEdicionId = null;
 
 const form = document.getElementById("form-publicacion");
 const inputNombre = document.getElementById("input-nombre");
@@ -134,12 +135,59 @@ function eliminarPublicacion(id) {
   renderPublicaciones();
 }
 
+function iniciarEdicion(id) {
+  publicacionEnEdicionId = id;
+  renderPublicaciones();
+}
+
+function cancelarEdicion() {
+  publicacionEnEdicionId = null;
+  renderPublicaciones();
+}
+
 listaPublicaciones.addEventListener("click", function (evento) {
   const botonEliminar = evento.target.closest(".btn-eliminar");
 
   if (botonEliminar) {
     const idEliminar = Number(botonEliminar.dataset.publicacionId);
     eliminarPublicacion(idEliminar);
+    return;
+  }
+
+  const botonEditar = evento.target.closest(".btn-editar");
+
+  if (botonEditar) {
+    const idEditar = Number(botonEditar.dataset.publicacionId);
+    iniciarEdicion(idEditar);
+    return;
+  }
+
+  const botonCancelarEdicion = evento.target.closest(".btn-cancelar-edicion");
+
+  if (botonCancelarEdicion) {
+    cancelarEdicion();
+    return;
+  }
+
+  const botonGuardarEdicion = evento.target.closest(".btn-guardar-edicion");
+
+  if (botonGuardarEdicion) {
+    const nota = botonGuardarEdicion.closest(".nota");
+    const textarea = nota.querySelector(".textarea-edicion");
+    const errorEdicion = nota.querySelector(".error-edicion");
+    const nuevoMensaje = textarea.value.trim();
+
+    if (nuevoMensaje === "") {
+      errorEdicion.textContent = "El mensaje no puede quedar vacío.";
+      errorEdicion.classList.remove("d-none");
+      textarea.focus();
+      return;
+    }
+
+    errorEdicion.classList.add("d-none");
+    // TODO (segunda mitad): actualizar el objeto existente en `publicaciones`
+    // (conservando nombre, fecha y likes), llamar guardarPublicaciones()
+    // y salir del modo edición con cancelarEdicion().
     return;
   }
 
@@ -169,6 +217,8 @@ function renderPublicaciones() {
     const nombre = document.createElement("p");
     nombre.className = "nota-nombre";
     nombre.textContent = publicacion.nombre;
+
+    const enEdicion = publicacion.id === publicacionEnEdicionId;
 
     const mensaje = document.createElement("p");
     mensaje.className = "nota-mensaje";
@@ -234,6 +284,16 @@ function renderPublicaciones() {
     acciones.appendChild(botonPrincipal);
     acciones.appendChild(menuReacciones);
 
+    const botonesGestion = document.createElement("div");
+    botonesGestion.className = "botones-gestion";
+
+    const botonEditar = document.createElement("button");
+    botonEditar.type = "button";
+    botonEditar.className = "btn-editar";
+    botonEditar.dataset.publicacionId = publicacion.id;
+    botonEditar.title = "Editar publicación";
+    botonEditar.textContent = "Editar";
+
     const botonEliminar = document.createElement("button");
     botonEliminar.type = "button";
     botonEliminar.className = "btn-eliminar";
@@ -241,11 +301,48 @@ function renderPublicaciones() {
     botonEliminar.title = "Eliminar publicación";
     botonEliminar.textContent = "Eliminar";
 
+    botonesGestion.appendChild(botonEditar);
+    botonesGestion.appendChild(botonEliminar);
+
     nota.appendChild(nombre);
-    nota.appendChild(mensaje);
-    nota.appendChild(fecha);
-    nota.appendChild(acciones);
-    nota.appendChild(botonEliminar);
+
+    if (enEdicion) {
+      const textareaEdicion = document.createElement("textarea");
+      textareaEdicion.className = "form-control textarea-edicion";
+      textareaEdicion.rows = 3;
+      textareaEdicion.value = publicacion.mensaje;
+
+      const errorEdicion = document.createElement("small");
+      errorEdicion.className = "error-edicion d-none";
+
+      const botonesEdicion = document.createElement("div");
+      botonesEdicion.className = "botones-edicion";
+
+      const botonGuardarEdicion = document.createElement("button");
+      botonGuardarEdicion.type = "button";
+      botonGuardarEdicion.className = "btn-guardar-edicion";
+      botonGuardarEdicion.dataset.publicacionId = publicacion.id;
+      botonGuardarEdicion.textContent = "Guardar";
+
+      const botonCancelarEdicion = document.createElement("button");
+      botonCancelarEdicion.type = "button";
+      botonCancelarEdicion.className = "btn-cancelar-edicion";
+      botonCancelarEdicion.dataset.publicacionId = publicacion.id;
+      botonCancelarEdicion.textContent = "Cancelar";
+
+      botonesEdicion.appendChild(botonGuardarEdicion);
+      botonesEdicion.appendChild(botonCancelarEdicion);
+
+      nota.appendChild(textareaEdicion);
+      nota.appendChild(errorEdicion);
+      nota.appendChild(botonesEdicion);
+      nota.appendChild(fecha);
+    } else {
+      nota.appendChild(mensaje);
+      nota.appendChild(fecha);
+      nota.appendChild(acciones);
+      nota.appendChild(botonesGestion);
+    }
 
     listaPublicaciones.appendChild(nota);
   });
