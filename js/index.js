@@ -563,7 +563,62 @@ listaPublicaciones.addEventListener("click", function (evento) {
   alternarReaccion(id, tipo);
 });
 
+function actualizarResumen() {
+  const totalPublicaciones = publicaciones.length;
+
+  const reactionTotals = {
+    like: 0,
+    love: 0,
+    dislike: 0,
+    angry: 0
+  };
+
+  publicaciones.forEach(function (pub) {
+    // Sumar likes clásicos si existen
+    reactionTotals.like += typeof pub.likes === "number" ? pub.likes : 0;
+
+    if (pub.reactions) {
+      Object.keys(reactionTotals).forEach(function (tipo) {
+        if (typeof pub.reactions[tipo] === "number") {
+          reactionTotals[tipo] += pub.reactions[tipo];
+        }
+      });
+    }
+  });
+
+  const totalComentarios = publicaciones.reduce(function (acc, pub) {
+    return acc + (Array.isArray(pub.comentarios) ? pub.comentarios.length : 0);
+  }, 0);
+
+  const elPublicaciones = document.getElementById("total-publicaciones");
+  const elComentarios = document.getElementById("total-comentarios");
+  const elLikes = document.getElementById("total-likes");
+  const elLoves = document.getElementById("total-loves");
+  const elDislikes = document.getElementById("total-dislikes");
+  const elAngries = document.getElementById("total-angries");
+
+  if (elPublicaciones) {
+    elPublicaciones.textContent = totalPublicaciones;
+  }
+  if (elComentarios) {
+    elComentarios.textContent = totalComentarios;
+  }
+  if (elLikes) {
+    elLikes.textContent = reactionTotals.like;
+  }
+  if (elLoves) {
+    elLoves.textContent = reactionTotals.love;
+  }
+  if (elDislikes) {
+    elDislikes.textContent = reactionTotals.dislike;
+  }
+  if (elAngries) {
+    elAngries.textContent = reactionTotals.angry;
+  }
+}
+
 function renderPublicaciones() {
+  actualizarResumen();
   const publicacionesFiltradas = obtenerPublicacionesFiltradas();
   const terminoBusqueda = normalizarTexto(inputBusqueda.value);
 
