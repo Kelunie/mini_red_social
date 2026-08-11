@@ -39,6 +39,7 @@ function normalizarPublicaciones(items) {
       dislike: 0,
       angry: 0,
       love: 0,
+      funny: 0,
     };
 
     return {
@@ -49,6 +50,7 @@ function normalizarPublicaciones(items) {
         dislike: typeof reactions.dislike === "number" ? reactions.dislike : 0,
         angry: typeof reactions.angry === "number" ? reactions.angry : 0,
         love: typeof reactions.love === "number" ? reactions.love : 0,
+        funny: typeof reactions.funny === "number" ? reactions.funny : 0,
       },
       userReactions: item.userReactions || {},
       fecha: item.fecha || new Date().toISOString(),
@@ -128,6 +130,7 @@ form.addEventListener("submit", function (evento) {
       dislike: 0,
       angry: 0,
       love: 0,
+      funny: 0,
     },
     userReactions: {},
     fecha: new Date().toISOString(),
@@ -432,6 +435,7 @@ function renderPublicaciones() {
       { tipo: "dislike", emoji: "👎", label: "No me gusta" },
       { tipo: "angry", emoji: "😡", label: "Me enoja" },
       { tipo: "love", emoji: "❤️", label: "Me encanta" },
+      { tipo: "funny", emoji: "😂", label: "Me divierte" },
     ];
 
     const reaccionSeleccionada = Object.keys(publicacion.userReactions || {}).find(function (tipo) {
