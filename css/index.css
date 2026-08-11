@@ -286,3 +286,66 @@ body {
   color: #c1551f;
   margin-top: 0.1rem;
 }
+
+.btn-editar-comentario,
+.btn-eliminar-comentario {
+  background: transparent;
+  border: none;
+  color: #c1551f;
+  font-size: 0.75rem;
+  padding: 0 0.2rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-editar-comentario:hover,
+.btn-eliminar-comentario:hover {
+  color: #8f3c15;
+}
+
+.textarea-edicion-comentario {
+  width: 100%;
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.error-edicion-comentario {
+  display: block;
+  width: 100%;
+  color: #c1551f;
+  margin-top: 0.1rem;
+}
+
+.botones-edicion-comentario {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+
+.botones-edicion-comentario .btn-guardar-comentario,
+.botones-edicion-comentario .btn-cancelar-comentario {
+  font-size: 0.78rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.botones-edicion-comentario .btn-guardar-comentario {
+  background-color: #d9662e;
+  color: #fff;
+  border: none;
+}
+
+.botones-edicion-comentario .btn-guardar-comentario:hover {
+  background-color: #c1551f;
+}
+
+.botones-edicion-comentario .btn-cancelar-comentario {
+  background: transparent;
+  border: 1px solid #999;
+  color: #666;
+}
+
+.botones-edicion-comentario .btn-cancelar-comentario:hover {
+  background-color: #eee;
+}
