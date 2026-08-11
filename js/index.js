@@ -128,10 +128,20 @@ contadorMensajePublicacion.insertAdjacentElement("afterend", errorLongitudPublic
 const contenedorBusqueda = document.createElement("div");
 contenedorBusqueda.className = "mb-3";
 
+const contenedorOrden = document.createElement("div");
+contenedorOrden.className = "mb-3 bloque-orden";
+
+let criterioOrdenPublicaciones = "recientes";
+
 const etiquetaBusqueda = document.createElement("label");
 etiquetaBusqueda.className = "form-label fw-semibold";
 etiquetaBusqueda.setAttribute("for", "input-busqueda-publicaciones");
 etiquetaBusqueda.textContent = "Buscar publicaciones";
+
+const etiquetaOrden = document.createElement("label");
+etiquetaOrden.className = "form-label fw-semibold";
+etiquetaOrden.setAttribute("for", "boton-orden-publicaciones");
+etiquetaOrden.textContent = "Ordenar publicaciones";
 
 const formBusqueda = document.createElement("form");
 formBusqueda.className = "d-flex gap-2 flex-column flex-sm-row";
@@ -148,6 +158,38 @@ botonBusqueda.type = "submit";
 botonBusqueda.className = "btn btn-outline-secondary";
 botonBusqueda.textContent = "Buscar";
 
+const contenedorDropdownOrden = document.createElement("div");
+contenedorDropdownOrden.className = "dropdown-orden-publicaciones";
+
+const botonOrden = document.createElement("button");
+botonOrden.type = "button";
+botonOrden.className = "boton-orden-publicaciones";
+botonOrden.id = "boton-orden-publicaciones";
+botonOrden.setAttribute("aria-haspopup", "true");
+botonOrden.setAttribute("aria-expanded", "false");
+botonOrden.textContent = "Recientes";
+
+const menuOrden = document.createElement("div");
+menuOrden.className = "menu-orden-publicaciones d-none";
+menuOrden.setAttribute("role", "menu");
+
+const opcionesOrden = [
+  { value: "recientes", label: "Recientes" },
+  { value: "antiguas", label: "Antiguas" },
+  { value: "gustadas", label: "Más gustadas" },
+];
+
+opcionesOrden.forEach(function (opcion) {
+  const itemOrden = document.createElement("button");
+  itemOrden.type = "button";
+  itemOrden.className = "opcion-orden-publicaciones";
+  itemOrden.dataset.valorOrden = opcion.value;
+  itemOrden.setAttribute("role", "menuitemradio");
+  itemOrden.setAttribute("aria-checked", opcion.value === criterioOrdenPublicaciones ? "true" : "false");
+  itemOrden.textContent = opcion.label;
+  menuOrden.appendChild(itemOrden);
+});
+
 const mensajeBusqueda = document.createElement("small");
 mensajeBusqueda.className = "mensaje-busqueda d-none d-block mt-1";
 mensajeBusqueda.setAttribute("role", "status");
@@ -157,13 +199,19 @@ formBusqueda.appendChild(inputBusqueda);
 formBusqueda.appendChild(botonBusqueda);
 contenedorBusqueda.appendChild(etiquetaBusqueda);
 contenedorBusqueda.appendChild(formBusqueda);
+contenedorOrden.appendChild(etiquetaOrden);
+contenedorDropdownOrden.appendChild(botonOrden);
+contenedorDropdownOrden.appendChild(menuOrden);
+contenedorOrden.appendChild(contenedorDropdownOrden);
 
 if (tituloMuro && tituloMuro.parentElement) {
   tituloMuro.insertAdjacentElement("afterend", contenedorBusqueda);
   contenedorBusqueda.insertAdjacentElement("afterend", mensajeBusqueda);
+  mensajeBusqueda.insertAdjacentElement("afterend", contenedorOrden);
 } else {
   listaPublicaciones.parentElement.insertBefore(mensajeBusqueda, listaPublicaciones);
   listaPublicaciones.parentElement.insertBefore(contenedorBusqueda, mensajeBusqueda);
+  listaPublicaciones.parentElement.insertBefore(contenedorOrden, listaPublicaciones);
 }
 
 function normalizarTexto(texto) {
@@ -226,6 +274,88 @@ function obtenerPublicacionesFiltradas() {
     return nombre.includes(terminoBusqueda) || mensaje.includes(terminoBusqueda);
   });
 }
+
+function obtenerPopularidad(publicacion) {
+  const likesClasicos = typeof publicacion.likes === "number" ? publicacion.likes : 0;
+  const meGustaReacciones =
+    publicacion.reactions && typeof publicacion.reactions.like === "number"
+      ? publicacion.reactions.like
+      : 0;
+
+  return likesClasicos + meGustaReacciones;
+}
+
+function obtenerPublicacionesOrdenadas(items) {
+  const publicacionesOrdenadas = items.slice();
+
+  publicacionesOrdenadas.sort(function (a, b) {
+    if (criterioOrdenPublicaciones === "antiguas") {
+      return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
+    }
+
+    if (criterioOrdenPublicaciones === "gustadas") {
+      const diferenciaPopularidad = obtenerPopularidad(b) - obtenerPopularidad(a);
+
+      if (diferenciaPopularidad !== 0) {
+        return diferenciaPopularidad;
+      }
+
+      return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+    }
+
+    return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+  });
+
+  return publicacionesOrdenadas;
+}
+
+function actualizarTextoOrden() {
+  const opcionActual = opcionesOrden.find(function (opcion) {
+    return opcion.value === criterioOrdenPublicaciones;
+  });
+
+  if (opcionActual) {
+    botonOrden.textContent = opcionActual.label;
+  }
+
+  menuOrden.querySelectorAll(".opcion-orden-publicaciones").forEach(function (item) {
+    const seleccionado = item.dataset.valorOrden === criterioOrdenPublicaciones;
+    item.classList.toggle("active", seleccionado);
+    item.setAttribute("aria-checked", seleccionado ? "true" : "false");
+  });
+}
+
+function cambiarOrdenPublicaciones(nuevoCriterio) {
+  criterioOrdenPublicaciones = nuevoCriterio;
+  actualizarTextoOrden();
+  renderPublicaciones();
+}
+
+botonOrden.addEventListener("click", function () {
+  const menuVisible = !menuOrden.classList.contains("d-none");
+
+  menuOrden.classList.toggle("d-none", menuVisible);
+  botonOrden.setAttribute("aria-expanded", menuVisible ? "false" : "true");
+});
+
+menuOrden.addEventListener("click", function (evento) {
+  const opcion = evento.target.closest(".opcion-orden-publicaciones");
+
+  if (!opcion) {
+    return;
+  }
+
+  cambiarOrdenPublicaciones(opcion.dataset.valorOrden);
+  menuOrden.classList.add("d-none");
+  botonOrden.setAttribute("aria-expanded", "false");
+});
+
+document.addEventListener("click", function (evento) {
+  if (!contenedorDropdownOrden.contains(evento.target)) {
+    menuOrden.classList.add("d-none");
+    botonOrden.setAttribute("aria-expanded", "false");
+  }
+});
 
 function actualizarEstadoBusqueda(cantidadResultados) {
   const terminoBusqueda = normalizarTexto(inputBusqueda.value);
@@ -636,7 +766,7 @@ function actualizarResumen() {
 
 function renderPublicaciones() {
   actualizarResumen();
-  const publicacionesFiltradas = obtenerPublicacionesFiltradas();
+  const publicacionesFiltradas = obtenerPublicacionesOrdenadas(obtenerPublicacionesFiltradas());
   const terminoBusqueda = normalizarTexto(inputBusqueda.value);
 
   listaPublicaciones.innerHTML = "";
@@ -951,3 +1081,4 @@ function renderPublicaciones() {
 }
 
 renderPublicaciones();
+actualizarTextoOrden();
