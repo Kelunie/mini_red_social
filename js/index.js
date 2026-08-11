@@ -104,6 +104,7 @@ let publicaciones = normalizarPublicaciones(cargarPublicaciones());
 let publicacionEnEdicionId = null;
 let comentarioEnEdicion = null;
 const LIMITE_MENSAJE = 200;
+const LIMITE_COMENTARIO = LIMITE_MENSAJE;
 
 const form = document.getElementById("form-publicacion");
 const inputNombre = document.getElementById("input-nombre");
@@ -114,7 +115,7 @@ const tituloMuro = document.querySelector(".titulo-muro");
 inputMensaje.maxLength = LIMITE_MENSAJE;
 
 const contadorMensajePublicacion = document.createElement("small");
-contadorMensajePublicacion.className = "text-muted d-block mt-1";
+contadorMensajePublicacion.className = "contador-mensaje-publicacion text-muted d-block mt-1";
 contadorMensajePublicacion.setAttribute("aria-live", "polite");
 contadorMensajePublicacion.setAttribute("data-contador", "mensaje-publicacion");
 inputMensaje.insertAdjacentElement("afterend", contadorMensajePublicacion);
@@ -147,8 +148,8 @@ botonBusqueda.type = "submit";
 botonBusqueda.className = "btn btn-outline-secondary";
 botonBusqueda.textContent = "Buscar";
 
-const mensajeBusqueda = document.createElement("div");
-mensajeBusqueda.className = "alert alert-warning py-2 mb-3 d-none";
+const mensajeBusqueda = document.createElement("small");
+mensajeBusqueda.className = "mensaje-busqueda d-none d-block mt-1";
 mensajeBusqueda.setAttribute("role", "status");
 mensajeBusqueda.setAttribute("aria-live", "polite");
 
@@ -511,7 +512,15 @@ listaPublicaciones.addEventListener("click", function (evento) {
     const itemComentario = botonGuardarComentario.closest(".comentario-item");
     const textareaComentario = itemComentario.querySelector(".textarea-edicion-comentario");
     const errorEdicionComentario = itemComentario.querySelector(".error-edicion-comentario");
-    const nuevoTexto = textareaComentario.value.trim();
+    const nuevoTextoIngresado = textareaComentario.value;
+    const nuevoTexto = nuevoTextoIngresado.trim();
+
+    if (!esTextoValidoConLimite(nuevoTextoIngresado, LIMITE_COMENTARIO)) {
+      errorEdicionComentario.textContent = `El comentario no puede superar los ${LIMITE_COMENTARIO} caracteres.`;
+      errorEdicionComentario.classList.remove("d-none");
+      textareaComentario.focus();
+      return;
+    }
 
     if (nuevoTexto === "") {
       errorEdicionComentario.textContent = "El comentario no puede quedar vacío.";
@@ -537,7 +546,15 @@ listaPublicaciones.addEventListener("click", function (evento) {
     const errorComentario = nota.querySelector(".error-comentario");
 
     const nombreComentario = inputNombreComentario.value.trim();
-    const textoComentario = inputTextoComentario.value.trim();
+    const textoComentarioIngresado = inputTextoComentario.value;
+    const textoComentario = textoComentarioIngresado.trim();
+
+    if (!esTextoValidoConLimite(textoComentarioIngresado, LIMITE_COMENTARIO)) {
+      errorComentario.textContent = `El comentario no puede superar los ${LIMITE_COMENTARIO} caracteres.`;
+      errorComentario.classList.remove("d-none");
+      inputTextoComentario.focus();
+      return;
+    }
 
     if (nombreComentario === "" || textoComentario === "") {
       errorComentario.textContent = "El nombre y el comentario son obligatorios.";
@@ -760,10 +777,21 @@ function renderPublicaciones() {
         const textareaEdicionComentario = document.createElement("textarea");
         textareaEdicionComentario.className = "form-control textarea-edicion-comentario";
         textareaEdicionComentario.rows = 2;
+        textareaEdicionComentario.maxLength = LIMITE_COMENTARIO;
         textareaEdicionComentario.value = comentario.texto;
+
+        const contadorEdicionComentario = document.createElement("small");
+        contadorEdicionComentario.className = "contador-edicion-comentario text-muted d-block";
+        contadorEdicionComentario.textContent = obtenerMensajeRestante(textareaEdicionComentario.value, LIMITE_COMENTARIO);
 
         const errorEdicionComentario = document.createElement("small");
         errorEdicionComentario.className = "error-edicion-comentario d-none";
+
+        textareaEdicionComentario.addEventListener("input", function () {
+          actualizarContadorCaracteres(textareaEdicionComentario, LIMITE_COMENTARIO, contadorEdicionComentario);
+          errorEdicionComentario.textContent = "";
+          errorEdicionComentario.classList.add("d-none");
+        });
 
         const botonesEdicionComentario = document.createElement("div");
         botonesEdicionComentario.className = "botones-edicion-comentario";
@@ -786,6 +814,7 @@ function renderPublicaciones() {
         botonesEdicionComentario.appendChild(botonCancelarComentario);
 
         itemComentario.appendChild(textareaEdicionComentario);
+        itemComentario.appendChild(contadorEdicionComentario);
         itemComentario.appendChild(errorEdicionComentario);
         itemComentario.appendChild(botonesEdicionComentario);
         itemComentario.appendChild(fechaComentario);
@@ -831,6 +860,17 @@ function renderPublicaciones() {
     inputTextoComentario.type = "text";
     inputTextoComentario.className = "form-control input-texto-comentario";
     inputTextoComentario.placeholder = "Escribe un comentario...";
+    inputTextoComentario.maxLength = LIMITE_COMENTARIO;
+
+    const contadorComentario = document.createElement("small");
+    contadorComentario.className = "contador-comentario text-muted d-block";
+    contadorComentario.textContent = obtenerMensajeRestante(inputTextoComentario.value, LIMITE_COMENTARIO);
+
+    inputTextoComentario.addEventListener("input", function () {
+      actualizarContadorCaracteres(inputTextoComentario, LIMITE_COMENTARIO, contadorComentario);
+      errorComentario.textContent = "";
+      errorComentario.classList.add("d-none");
+    });
 
     const botonComentar = document.createElement("button");
     botonComentar.type = "button";
@@ -843,6 +883,7 @@ function renderPublicaciones() {
 
     formComentario.appendChild(inputNombreComentario);
     formComentario.appendChild(inputTextoComentario);
+    formComentario.appendChild(contadorComentario);
     formComentario.appendChild(botonComentar);
     formComentario.appendChild(errorComentario);
 

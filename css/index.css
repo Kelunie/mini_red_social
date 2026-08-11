@@ -40,8 +40,7 @@ body {
 
 #input-busqueda-publicaciones,
 #input-busqueda-publicaciones + button,
-.form-label[for="input-busqueda-publicaciones"],
-[aria-live="polite"] {
+.form-label[for="input-busqueda-publicaciones"] {
   font-family: "Nunito Sans", "Segoe UI", sans-serif;
 }
 
@@ -80,12 +79,20 @@ body {
   box-shadow: 0 10px 20px rgba(217, 102, 46, 0.28);
 }
 
-[aria-live="polite"] {
-  border-radius: 16px;
-  border: 1px solid #f1d39d;
-  background-color: #fff7e9;
+.mensaje-busqueda {
   color: #8a5a1e;
-  box-shadow: 0 6px 16px rgba(138, 90, 30, 0.08);
+  font-size: 0.82rem;
+  line-height: 1.2;
+  margin-top: 0.15rem;
+}
+
+.contador-mensaje-publicacion,
+.contador-comentario,
+.contador-edicion-comentario {
+  color: #7a7a7a;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  margin-top: 0.15rem;
 }
 
 #lista-publicaciones .nota {
