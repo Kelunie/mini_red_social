@@ -119,7 +119,30 @@ form.addEventListener("submit", function (evento) {
   form.reset();
 });
 
+function eliminarPublicacion(id) {
+  const confirmado = confirm("¿Seguro que deseas eliminar esta publicación?");
+
+  if (!confirmado) {
+    return;
+  }
+
+  publicaciones = publicaciones.filter(function (item) {
+    return item.id !== id;
+  });
+
+  guardarPublicaciones();
+  renderPublicaciones();
+}
+
 listaPublicaciones.addEventListener("click", function (evento) {
+  const botonEliminar = evento.target.closest(".btn-eliminar");
+
+  if (botonEliminar) {
+    const idEliminar = Number(botonEliminar.dataset.publicacionId);
+    eliminarPublicacion(idEliminar);
+    return;
+  }
+
   const boton = evento.target.closest(".reaction-btn");
 
   if (!boton) {
@@ -211,10 +234,18 @@ function renderPublicaciones() {
     acciones.appendChild(botonPrincipal);
     acciones.appendChild(menuReacciones);
 
+    const botonEliminar = document.createElement("button");
+    botonEliminar.type = "button";
+    botonEliminar.className = "btn-eliminar";
+    botonEliminar.dataset.publicacionId = publicacion.id;
+    botonEliminar.title = "Eliminar publicación";
+    botonEliminar.textContent = "Eliminar";
+
     nota.appendChild(nombre);
     nota.appendChild(mensaje);
     nota.appendChild(fecha);
     nota.appendChild(acciones);
+    nota.appendChild(botonEliminar);
 
     listaPublicaciones.appendChild(nota);
   });
