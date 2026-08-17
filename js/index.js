@@ -34,6 +34,7 @@ function normalizarComentarios(comentarios) {
       ...comentario,
       id: comentario.id || generarId(),
       fecha: comentario.fecha || new Date().toISOString(),
+      respuestas: Array.isArray(comentario.respuestas) ? comentario.respuestas : [],
     };
   });
 }
@@ -111,6 +112,7 @@ function alternarReaccion(id, tipo) {
 let publicaciones = normalizarPublicaciones(cargarPublicaciones());
 let publicacionEnEdicionId = null;
 let comentarioEnEdicion = null;
+let respuestaActiva = null;
 const LIMITE_MENSAJE = 200;
 const LIMITE_COMENTARIO = LIMITE_MENSAJE;
 
@@ -532,6 +534,37 @@ function agregarComentario(id, nombreComentario, textoComentario) {
     nombre: nombreComentario,
     texto: textoComentario,
     fecha: new Date().toISOString(),
+    respuestas: [],
+  });
+
+  guardarPublicaciones();
+  renderPublicaciones();
+}
+
+function agregarRespuesta(publicacionId, comentarioId, nombreRespuesta, textoRespuesta) {
+  const publicacion = buscarPublicacion(publicacionId);
+
+  if (!publicacion) {
+    return;
+  }
+
+  const comentario = publicacion.comentarios.find(function (item) {
+    return item.id === comentarioId;
+  });
+
+  if (!comentario) {
+    return;
+  }
+
+  if (!Array.isArray(comentario.respuestas)) {
+    comentario.respuestas = [];
+  }
+
+  comentario.respuestas.push({
+    id: generarId(),
+    nombre: nombreRespuesta,
+    texto: textoRespuesta,
+    fecha: new Date().toISOString(),
   });
 
   guardarPublicaciones();
@@ -768,6 +801,60 @@ listaPublicaciones.addEventListener("click", function (evento) {
 
     const idComentado = Number(botonComentar.dataset.publicacionId);
     agregarComentario(idComentado, nombreComentario, textoComentario);
+    return;
+  }
+
+  const botonResponder = evento.target.closest(".btn-responder");
+
+  if (botonResponder) {
+    const publicacionId = Number(botonResponder.dataset.publicacionId);
+    const comentarioId = Number(botonResponder.dataset.comentarioId);
+
+    if (
+      respuestaActiva &&
+      respuestaActiva.publicacionId === publicacionId &&
+      respuestaActiva.comentarioId === comentarioId
+    ) {
+      respuestaActiva = null;
+    } else {
+      respuestaActiva = { publicacionId: publicacionId, comentarioId: comentarioId };
+    }
+
+    renderPublicaciones();
+    return;
+  }
+
+  const botonCancelarRespuesta = evento.target.closest(".btn-cancelar-respuesta");
+
+  if (botonCancelarRespuesta) {
+    respuestaActiva = null;
+    renderPublicaciones();
+    return;
+  }
+
+  const botonEnviarRespuesta = evento.target.closest(".btn-enviar-respuesta");
+
+  if (botonEnviarRespuesta) {
+    const contenedorRespuesta = botonEnviarRespuesta.closest(".form-respuesta");
+    const inputNombreRespuesta = contenedorRespuesta.querySelector(".input-nombre-respuesta");
+    const inputTextoRespuesta = contenedorRespuesta.querySelector(".input-texto-respuesta");
+    const errorRespuesta = contenedorRespuesta.querySelector(".error-respuesta");
+
+    const nombreRespuesta = inputNombreRespuesta.value.trim();
+    const textoRespuesta = inputTextoRespuesta.value.trim();
+
+    if (nombreRespuesta === "" || textoRespuesta === "") {
+      errorRespuesta.textContent = "El nombre y la respuesta son obligatorios.";
+      errorRespuesta.classList.remove("d-none");
+      return;
+    }
+
+    errorRespuesta.classList.add("d-none");
+
+    const publicacionId = Number(botonEnviarRespuesta.dataset.publicacionId);
+    const comentarioId = Number(botonEnviarRespuesta.dataset.comentarioId);
+    respuestaActiva = null;
+    agregarRespuesta(publicacionId, comentarioId, nombreRespuesta, textoRespuesta);
     return;
   }
 
@@ -1052,10 +1139,102 @@ function renderPublicaciones() {
         botonEliminarComentario.title = "Eliminar comentario";
         botonEliminarComentario.textContent = "Eliminar";
 
+        const botonResponder = document.createElement("button");
+        botonResponder.type = "button";
+        botonResponder.className = "btn-responder";
+        botonResponder.dataset.publicacionId = publicacion.id;
+        botonResponder.dataset.comentarioId = comentario.id;
+        botonResponder.title = "Responder comentario";
+        botonResponder.textContent = "Responder";
+
         itemComentario.appendChild(textoComentario);
         itemComentario.appendChild(fechaComentario);
         itemComentario.appendChild(botonEditarComentario);
         itemComentario.appendChild(botonEliminarComentario);
+        itemComentario.appendChild(botonResponder);
+
+        // Renderizar respuestas existentes debajo del comentario
+        const respuestas = Array.isArray(comentario.respuestas) ? comentario.respuestas : [];
+
+        if (respuestas.length > 0) {
+          const listaRespuestas = document.createElement("div");
+          listaRespuestas.className = "lista-respuestas";
+
+          respuestas.forEach(function (respuesta) {
+            const itemRespuesta = document.createElement("div");
+            itemRespuesta.className = "respuesta-item";
+
+            const nombreRespuesta = document.createElement("span");
+            nombreRespuesta.className = "respuesta-nombre";
+            nombreRespuesta.textContent = respuesta.nombre;
+
+            const textoRespuesta = document.createElement("span");
+            textoRespuesta.className = "respuesta-texto";
+            textoRespuesta.textContent = respuesta.texto;
+
+            const fechaRespuesta = document.createElement("span");
+            fechaRespuesta.className = "respuesta-fecha";
+            fechaRespuesta.textContent = formatearFecha(respuesta.fecha);
+
+            itemRespuesta.appendChild(nombreRespuesta);
+            itemRespuesta.appendChild(textoRespuesta);
+            itemRespuesta.appendChild(fechaRespuesta);
+            listaRespuestas.appendChild(itemRespuesta);
+          });
+
+          itemComentario.appendChild(listaRespuestas);
+        }
+
+        // Formulario inline de respuesta (solo visible cuando respuestaActiva apunta a este comentario)
+        const formularioAbierto =
+          respuestaActiva &&
+          respuestaActiva.publicacionId === publicacion.id &&
+          respuestaActiva.comentarioId === comentario.id;
+
+        if (formularioAbierto) {
+          const formRespuesta = document.createElement("div");
+          formRespuesta.className = "form-respuesta";
+
+          const inputNombreRespuesta = document.createElement("input");
+          inputNombreRespuesta.type = "text";
+          inputNombreRespuesta.className = "form-control input-nombre-respuesta";
+          inputNombreRespuesta.placeholder = "Tu nombre";
+
+          const inputTextoRespuesta = document.createElement("input");
+          inputTextoRespuesta.type = "text";
+          inputTextoRespuesta.className = "form-control input-texto-respuesta";
+          inputTextoRespuesta.placeholder = "Escribe tu respuesta...";
+
+          const botonesRespuesta = document.createElement("div");
+          botonesRespuesta.className = "botones-respuesta";
+
+          const botonEnviarRespuesta = document.createElement("button");
+          botonEnviarRespuesta.type = "button";
+          botonEnviarRespuesta.className = "btn-enviar-respuesta";
+          botonEnviarRespuesta.dataset.publicacionId = publicacion.id;
+          botonEnviarRespuesta.dataset.comentarioId = comentario.id;
+          botonEnviarRespuesta.textContent = "Enviar";
+
+          const botonCancelarRespuesta = document.createElement("button");
+          botonCancelarRespuesta.type = "button";
+          botonCancelarRespuesta.className = "btn-cancelar-respuesta";
+          botonCancelarRespuesta.dataset.publicacionId = publicacion.id;
+          botonCancelarRespuesta.dataset.comentarioId = comentario.id;
+          botonCancelarRespuesta.textContent = "Cancelar";
+
+          const errorRespuesta = document.createElement("small");
+          errorRespuesta.className = "error-respuesta d-none";
+
+          botonesRespuesta.appendChild(botonEnviarRespuesta);
+          botonesRespuesta.appendChild(botonCancelarRespuesta);
+
+          formRespuesta.appendChild(inputNombreRespuesta);
+          formRespuesta.appendChild(inputTextoRespuesta);
+          formRespuesta.appendChild(botonesRespuesta);
+          formRespuesta.appendChild(errorRespuesta);
+
+          itemComentario.appendChild(formRespuesta);
+        }
       }
 
       seccionComentarios.appendChild(itemComentario);
