@@ -562,3 +562,114 @@ body {
 .botones-edicion-comentario .btn-cancelar-comentario:hover {
   background-color: #eee;
 }
+
+/* ── H14: Respuestas a comentarios ── */
+
+.btn-responder {
+  background: transparent;
+  border: none;
+  color: #d9662e;
+  font-size: 0.75rem;
+  padding: 0 0.2rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-responder:hover {
+  color: #8f3c15;
+}
+
+.lista-respuestas {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.respuesta-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  margin-top: 0.25rem;
+  margin-left: 1.2rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid #ead9c3;
+}
+
+.respuesta-nombre {
+  font-weight: bold;
+  color: #333;
+}
+
+.respuesta-texto {
+  color: #555;
+}
+
+.respuesta-fecha {
+  color: #999;
+  font-size: 0.7rem;
+  margin-left: auto;
+}
+
+.form-respuesta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  margin-left: 1.2rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid #ead9c3;
+  width: 100%;
+}
+
+.form-respuesta .input-nombre-respuesta {
+  flex: 0 0 30%;
+  font-size: 0.82rem;
+}
+
+.form-respuesta .input-texto-respuesta {
+  flex: 1 1 auto;
+  font-size: 0.82rem;
+}
+
+.botones-respuesta {
+  display: flex;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.btn-enviar-respuesta {
+  background-color: #d9662e;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.8rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.btn-enviar-respuesta:hover {
+  background-color: #c1551f;
+}
+
+.btn-cancelar-respuesta {
+  background: transparent;
+  border: 1px solid #999;
+  color: #666;
+  border-radius: 4px;
+  padding: 0.25rem 0.8rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.btn-cancelar-respuesta:hover {
+  background-color: #eee;
+}
+
+.error-respuesta {
+  display: block;
+  width: 100%;
+  color: #c1551f;
+  font-size: 0.78rem;
+  margin-top: 0.1rem;
+}
