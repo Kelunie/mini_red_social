@@ -53,6 +53,7 @@ function normalizarPublicaciones(items) {
         funny: typeof reactions.funny === "number" ? reactions.funny : 0,
       },
       userReactions: item.userReactions || {},
+      favorito: typeof item.favorito === "boolean" ? item.favorito : false,
       fecha: item.fecha || new Date().toISOString(),
       comentarios: normalizarComentarios(item.comentarios),
     };
@@ -131,7 +132,20 @@ contenedorBusqueda.className = "mb-3";
 const contenedorOrden = document.createElement("div");
 contenedorOrden.className = "mb-3 bloque-orden";
 
+const contenedorFavoritas = document.createElement("div");
+contenedorFavoritas.className = "mb-3 bloque-favoritas";
+
 let criterioOrdenPublicaciones = "recientes";
+let filtroSoloFavoritas = false;
+
+const botonFiltroFavoritas = document.createElement("button");
+botonFiltroFavoritas.type = "button";
+botonFiltroFavoritas.className = "boton-filtro-favoritas";
+botonFiltroFavoritas.id = "boton-filtro-favoritas";
+botonFiltroFavoritas.setAttribute("aria-pressed", "false");
+botonFiltroFavoritas.textContent = "☆ Mostrar solo favoritas";
+
+contenedorFavoritas.appendChild(botonFiltroFavoritas);
 
 const etiquetaBusqueda = document.createElement("label");
 etiquetaBusqueda.className = "form-label fw-semibold";
@@ -208,10 +222,12 @@ if (tituloMuro && tituloMuro.parentElement) {
   tituloMuro.insertAdjacentElement("afterend", contenedorBusqueda);
   contenedorBusqueda.insertAdjacentElement("afterend", mensajeBusqueda);
   mensajeBusqueda.insertAdjacentElement("afterend", contenedorOrden);
+  contenedorOrden.insertAdjacentElement("afterend", contenedorFavoritas);
 } else {
   listaPublicaciones.parentElement.insertBefore(mensajeBusqueda, listaPublicaciones);
   listaPublicaciones.parentElement.insertBefore(contenedorBusqueda, mensajeBusqueda);
   listaPublicaciones.parentElement.insertBefore(contenedorOrden, listaPublicaciones);
+  listaPublicaciones.parentElement.insertBefore(contenedorFavoritas, listaPublicaciones);
 }
 
 function normalizarTexto(texto) {
@@ -263,16 +279,24 @@ actualizarContadorCaracteres(inputMensaje, LIMITE_MENSAJE, contadorMensajePublic
 function obtenerPublicacionesFiltradas() {
   const terminoBusqueda = normalizarTexto(inputBusqueda.value);
 
-  if (terminoBusqueda === "") {
-    return publicaciones;
+  let resultado = publicaciones;
+
+  if (terminoBusqueda !== "") {
+    resultado = resultado.filter(function (publicacion) {
+      const nombre = normalizarTexto(publicacion.nombre);
+      const mensaje = normalizarTexto(publicacion.mensaje);
+
+      return nombre.includes(terminoBusqueda) || mensaje.includes(terminoBusqueda);
+    });
   }
 
-  return publicaciones.filter(function (publicacion) {
-    const nombre = normalizarTexto(publicacion.nombre);
-    const mensaje = normalizarTexto(publicacion.mensaje);
+  if (filtroSoloFavoritas) {
+    resultado = resultado.filter(function (publicacion) {
+      return publicacion.favorito === true;
+    });
+  }
 
-    return nombre.includes(terminoBusqueda) || mensaje.includes(terminoBusqueda);
-  });
+  return resultado;
 }
 
 function obtenerPopularidad(publicacion) {
@@ -357,6 +381,22 @@ document.addEventListener("click", function (evento) {
   }
 });
 
+function actualizarTextoFiltroFavoritas() {
+  botonFiltroFavoritas.classList.toggle("active", filtroSoloFavoritas);
+  botonFiltroFavoritas.setAttribute("aria-pressed", filtroSoloFavoritas ? "true" : "false");
+  botonFiltroFavoritas.textContent = filtroSoloFavoritas
+    ? "★ Mostrando solo favoritas"
+    : "☆ Mostrar solo favoritas";
+}
+
+function alternarFiltroFavoritas() {
+  filtroSoloFavoritas = !filtroSoloFavoritas;
+  actualizarTextoFiltroFavoritas();
+  renderPublicaciones();
+}
+
+botonFiltroFavoritas.addEventListener("click", alternarFiltroFavoritas);
+
 function actualizarEstadoBusqueda(cantidadResultados) {
   const terminoBusqueda = normalizarTexto(inputBusqueda.value);
   const sinCoincidencias = terminoBusqueda !== "" && cantidadResultados === 0;
@@ -405,6 +445,7 @@ form.addEventListener("submit", function (evento) {
       funny: 0,
     },
     userReactions: {},
+    favorito: false,
     fecha: new Date().toISOString(),
     comentarios: [],
   };
@@ -539,6 +580,21 @@ function eliminarComentario(publicacionId, comentarioId) {
   renderPublicaciones();
 }
 
+function alternarFavorito(id) {
+  const publicacion = publicaciones.find(function (item) {
+    return item.id === id;
+  });
+
+  if (!publicacion) {
+    return;
+  }
+
+  publicacion.favorito = !publicacion.favorito;
+
+  guardarPublicaciones();
+  renderPublicaciones();
+}
+
 function iniciarEdicion(id) {
   publicacionEnEdicionId = id;
   renderPublicaciones();
@@ -550,6 +606,14 @@ function cancelarEdicion() {
 }
 
 listaPublicaciones.addEventListener("click", function (evento) {
+  const botonFavorito = evento.target.closest(".btn-favorito");
+
+  if (botonFavorito) {
+    const idFavorito = Number(botonFavorito.dataset.publicacionId);
+    alternarFavorito(idFavorito);
+    return;
+  }
+
   const botonEliminar = evento.target.closest(".btn-eliminar");
 
   if (botonEliminar) {
@@ -864,6 +928,16 @@ function renderPublicaciones() {
     const botonesGestion = document.createElement("div");
     botonesGestion.className = "botones-gestion";
 
+    const botonFavorito = document.createElement("button");
+    botonFavorito.type = "button";
+    botonFavorito.className = publicacion.favorito ? "btn-favorito active" : "btn-favorito";
+    botonFavorito.dataset.publicacionId = publicacion.id;
+    botonFavorito.title = publicacion.favorito ? "Quitar de favoritos" : "Marcar como favorita";
+    botonFavorito.setAttribute("aria-pressed", publicacion.favorito ? "true" : "false");
+    botonFavorito.textContent = publicacion.favorito ? "★ Favorita" : "☆ Favorita";
+
+    botonesGestion.appendChild(botonFavorito);
+
     const botonEditar = document.createElement("button");
     botonEditar.type = "button";
     botonEditar.className = "btn-editar";
@@ -1082,3 +1156,4 @@ function renderPublicaciones() {
 
 renderPublicaciones();
 actualizarTextoOrden();
+actualizarTextoFiltroFavoritas();
