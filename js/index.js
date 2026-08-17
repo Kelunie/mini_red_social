@@ -1,5 +1,12 @@
 const STORAGE_KEY = "publicaciones";
 
+const ETIQUETAS_VALIDAS = ["General", "Estudio", "Evento", "Ayuda"];
+const ETIQUETA_POR_DEFECTO = "General";
+
+function normalizarEtiqueta(etiqueta) {
+  return ETIQUETAS_VALIDAS.includes(etiqueta) ? etiqueta : ETIQUETA_POR_DEFECTO;
+}
+
 function cargarPublicaciones() {
   const datos = localStorage.getItem(STORAGE_KEY);
   return datos ? JSON.parse(datos) : [];
@@ -55,6 +62,7 @@ function normalizarPublicaciones(items) {
       userReactions: item.userReactions || {},
       fecha: item.fecha || new Date().toISOString(),
       comentarios: normalizarComentarios(item.comentarios),
+      etiqueta: normalizarEtiqueta(item.etiqueta),
     };
   });
 }
@@ -109,6 +117,7 @@ const LIMITE_COMENTARIO = LIMITE_MENSAJE;
 const form = document.getElementById("form-publicacion");
 const inputNombre = document.getElementById("input-nombre");
 const inputMensaje = document.getElementById("input-mensaje");
+const inputEtiqueta = document.getElementById("input-etiqueta");
 const listaPublicaciones = document.getElementById("lista-publicaciones");
 const tituloMuro = document.querySelector(".titulo-muro");
 
@@ -195,6 +204,57 @@ mensajeBusqueda.className = "mensaje-busqueda d-none d-block mt-1";
 mensajeBusqueda.setAttribute("role", "status");
 mensajeBusqueda.setAttribute("aria-live", "polite");
 
+let filtroEtiquetaActual = "Todas";
+
+const contenedorFiltroEtiquetas = document.createElement("div");
+contenedorFiltroEtiquetas.className = "mb-3 bloque-filtro-etiquetas";
+
+const etiquetaFiltro = document.createElement("label");
+etiquetaFiltro.className = "form-label fw-semibold";
+etiquetaFiltro.textContent = "Filtrar por etiqueta";
+
+const grupoFiltroEtiquetas = document.createElement("div");
+grupoFiltroEtiquetas.className = "filtro-etiquetas";
+grupoFiltroEtiquetas.setAttribute("role", "group");
+grupoFiltroEtiquetas.setAttribute("aria-label", "Filtrar publicaciones por etiqueta");
+
+const opcionesFiltroEtiquetas = ["Todas"].concat(ETIQUETAS_VALIDAS);
+
+opcionesFiltroEtiquetas.forEach(function (opcion) {
+  const botonFiltro = document.createElement("button");
+  botonFiltro.type = "button";
+  botonFiltro.className = "filtro-etiqueta-btn";
+  botonFiltro.classList.toggle("active", opcion === filtroEtiquetaActual);
+  botonFiltro.dataset.valorFiltro = opcion;
+  botonFiltro.textContent = opcion;
+  grupoFiltroEtiquetas.appendChild(botonFiltro);
+});
+
+contenedorFiltroEtiquetas.appendChild(etiquetaFiltro);
+contenedorFiltroEtiquetas.appendChild(grupoFiltroEtiquetas);
+
+function actualizarBotonesFiltroEtiquetas() {
+  grupoFiltroEtiquetas.querySelectorAll(".filtro-etiqueta-btn").forEach(function (boton) {
+    boton.classList.toggle("active", boton.dataset.valorFiltro === filtroEtiquetaActual);
+  });
+}
+
+function cambiarFiltroEtiqueta(nuevoFiltro) {
+  filtroEtiquetaActual = nuevoFiltro;
+  actualizarBotonesFiltroEtiquetas();
+  renderPublicaciones();
+}
+
+grupoFiltroEtiquetas.addEventListener("click", function (evento) {
+  const boton = evento.target.closest(".filtro-etiqueta-btn");
+
+  if (!boton) {
+    return;
+  }
+
+  cambiarFiltroEtiqueta(boton.dataset.valorFiltro);
+});
+
 formBusqueda.appendChild(inputBusqueda);
 formBusqueda.appendChild(botonBusqueda);
 contenedorBusqueda.appendChild(etiquetaBusqueda);
@@ -207,10 +267,12 @@ contenedorOrden.appendChild(contenedorDropdownOrden);
 if (tituloMuro && tituloMuro.parentElement) {
   tituloMuro.insertAdjacentElement("afterend", contenedorBusqueda);
   contenedorBusqueda.insertAdjacentElement("afterend", mensajeBusqueda);
-  mensajeBusqueda.insertAdjacentElement("afterend", contenedorOrden);
+  mensajeBusqueda.insertAdjacentElement("afterend", contenedorFiltroEtiquetas);
+  contenedorFiltroEtiquetas.insertAdjacentElement("afterend", contenedorOrden);
 } else {
   listaPublicaciones.parentElement.insertBefore(mensajeBusqueda, listaPublicaciones);
   listaPublicaciones.parentElement.insertBefore(contenedorBusqueda, mensajeBusqueda);
+  listaPublicaciones.parentElement.insertBefore(contenedorFiltroEtiquetas, listaPublicaciones);
   listaPublicaciones.parentElement.insertBefore(contenedorOrden, listaPublicaciones);
 }
 
@@ -263,11 +325,18 @@ actualizarContadorCaracteres(inputMensaje, LIMITE_MENSAJE, contadorMensajePublic
 function obtenerPublicacionesFiltradas() {
   const terminoBusqueda = normalizarTexto(inputBusqueda.value);
 
+  const publicacionesPorEtiqueta =
+    filtroEtiquetaActual === "Todas"
+      ? publicaciones
+      : publicaciones.filter(function (publicacion) {
+          return publicacion.etiqueta === filtroEtiquetaActual;
+        });
+
   if (terminoBusqueda === "") {
-    return publicaciones;
+    return publicacionesPorEtiqueta;
   }
 
-  return publicaciones.filter(function (publicacion) {
+  return publicacionesPorEtiqueta.filter(function (publicacion) {
     const nombre = normalizarTexto(publicacion.nombre);
     const mensaje = normalizarTexto(publicacion.mensaje);
 
@@ -359,7 +428,9 @@ document.addEventListener("click", function (evento) {
 
 function actualizarEstadoBusqueda(cantidadResultados) {
   const terminoBusqueda = normalizarTexto(inputBusqueda.value);
-  const sinCoincidencias = terminoBusqueda !== "" && cantidadResultados === 0;
+  const hayFiltroEtiqueta = filtroEtiquetaActual !== "Todas";
+  const sinCoincidencias =
+    (terminoBusqueda !== "" || hayFiltroEtiqueta) && cantidadResultados === 0 && publicaciones.length > 0;
 
   if (sinCoincidencias) {
     mensajeBusqueda.textContent = "No se encontraron coincidencias.";
@@ -407,6 +478,7 @@ form.addEventListener("submit", function (evento) {
     userReactions: {},
     fecha: new Date().toISOString(),
     comentarios: [],
+    etiqueta: normalizarEtiqueta(inputEtiqueta.value),
   };
 
   publicaciones.unshift(publicacion);
@@ -790,9 +862,20 @@ function renderPublicaciones() {
     const nota = document.createElement("div");
     nota.className = "nota";
 
+    const encabezado = document.createElement("div");
+    encabezado.className = "nota-encabezado";
+
     const nombre = document.createElement("p");
-    nombre.className = "nota-nombre";
+    nombre.className = "nota-nombre mb-0";
     nombre.textContent = publicacion.nombre;
+
+    const etiquetaPublicacion = normalizarEtiqueta(publicacion.etiqueta);
+    const badgeEtiqueta = document.createElement("span");
+    badgeEtiqueta.className = `badge-etiqueta badge-etiqueta-${etiquetaPublicacion.toLowerCase()}`;
+    badgeEtiqueta.textContent = etiquetaPublicacion;
+
+    encabezado.appendChild(nombre);
+    encabezado.appendChild(badgeEtiqueta);
 
     const enEdicion = publicacion.id === publicacionEnEdicionId;
 
@@ -1019,7 +1102,7 @@ function renderPublicaciones() {
 
     seccionComentarios.appendChild(formComentario);
 
-    nota.appendChild(nombre);
+    nota.appendChild(encabezado);
 
     if (enEdicion) {
       const textareaEdicion = document.createElement("textarea");
