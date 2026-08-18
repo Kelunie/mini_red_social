@@ -287,6 +287,132 @@ botonFiltroFavoritas.textContent = "⭐ Solo favoritas";
 
 contenedorFiltroFavoritas.appendChild(botonFiltroFavoritas);
 
+// Controles de respaldo: exportar/importar (H19)
+const contenedorRespaldo = document.createElement("div");
+contenedorRespaldo.className = "mb-3 bloque-respaldo";
+
+const botonExportarRespaldo = document.createElement("button");
+botonExportarRespaldo.type = "button";
+botonExportarRespaldo.className = "btn-respaldo btn-exportar-respaldo";
+botonExportarRespaldo.textContent = "Exportar respaldo";
+
+const botonImportarRespaldo = document.createElement("button");
+botonImportarRespaldo.type = "button";
+botonImportarRespaldo.className = "btn-respaldo btn-importar-respaldo";
+botonImportarRespaldo.textContent = "Importar respaldo";
+
+const inputImportarRespaldo = document.createElement("input");
+inputImportarRespaldo.type = "file";
+inputImportarRespaldo.accept = "application/json,.json";
+inputImportarRespaldo.className = "d-none";
+
+const mensajeRespaldo = document.createElement("small");
+mensajeRespaldo.className = "mensaje-respaldo d-none d-block mt-1";
+mensajeRespaldo.setAttribute("role", "status");
+mensajeRespaldo.setAttribute("aria-live", "polite");
+
+contenedorRespaldo.appendChild(botonExportarRespaldo);
+contenedorRespaldo.appendChild(botonImportarRespaldo);
+contenedorRespaldo.appendChild(inputImportarRespaldo);
+contenedorRespaldo.appendChild(mensajeRespaldo);
+
+function mostrarMensajeRespaldo(texto, esError) {
+  mensajeRespaldo.textContent = texto;
+  mensajeRespaldo.classList.remove("d-none");
+  mensajeRespaldo.classList.toggle("text-danger", Boolean(esError));
+  mensajeRespaldo.classList.toggle("text-success", !esError);
+}
+
+function descargarArchivoJson(nombreArchivo, datos) {
+  const contenido = JSON.stringify(datos, null, 2);
+  const blob = new Blob([contenido], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombreArchivo;
+  document.body.appendChild(enlace);
+  enlace.click();
+  document.body.removeChild(enlace);
+  URL.revokeObjectURL(url);
+}
+
+function esRespaldoValido(datos) {
+  if (!Array.isArray(datos)) {
+    return false;
+  }
+
+  return datos.every(function (item) {
+    return (
+      item !== null &&
+      typeof item === "object" &&
+      typeof item.nombre === "string" &&
+      typeof item.mensaje === "string"
+    );
+  });
+}
+
+botonExportarRespaldo.addEventListener("click", function () {
+  const fecha = new Date().toISOString().slice(0, 10);
+  descargarArchivoJson(`mini_red_social_respaldo_${fecha}.json`, publicaciones);
+  mostrarMensajeRespaldo("Respaldo descargado correctamente.", false);
+});
+
+botonImportarRespaldo.addEventListener("click", function () {
+  inputImportarRespaldo.click();
+});
+
+inputImportarRespaldo.addEventListener("change", function (evento) {
+  const archivo = evento.target.files[0];
+
+  if (!archivo) {
+    return;
+  }
+
+  const lector = new FileReader();
+
+  lector.onload = function () {
+    inputImportarRespaldo.value = "";
+
+    let datos;
+    try {
+      datos = JSON.parse(String(lector.result));
+    } catch (e) {
+      mostrarMensajeRespaldo("El archivo no es un JSON válido.", true);
+      return;
+    }
+
+    if (!esRespaldoValido(datos)) {
+      mostrarMensajeRespaldo("El archivo no tiene la estructura esperada de un respaldo.", true);
+      return;
+    }
+
+    const confirmado = confirm(
+      "Esto reemplazará todas las publicaciones actuales por las del archivo importado. ¿Continuar?"
+    );
+
+    if (!confirmado) {
+      return;
+    }
+
+    publicaciones = normalizarPublicaciones(
+      datos.map(function (item) {
+        return {
+          ...item,
+          id: typeof item.id === "number" ? item.id : generarId(),
+        };
+      })
+    );
+
+    guardarPublicaciones();
+    paginaActual = 1;
+    renderPublicaciones();
+    mostrarMensajeRespaldo("Respaldo importado correctamente.", false);
+  };
+
+  lector.readAsText(archivo);
+});
+
 // Controles de paginación (H18)
 const contenedorPaginacion = document.createElement("div");
 contenedorPaginacion.className = "bloque-paginacion";
@@ -352,13 +478,15 @@ contenedorDropdownOrden.appendChild(menuOrden);
 contenedorOrden.appendChild(contenedorDropdownOrden);
 
 if (tituloMuro && tituloMuro.parentElement) {
-  tituloMuro.insertAdjacentElement("afterend", contenedorBusqueda);
+  tituloMuro.insertAdjacentElement("afterend", contenedorRespaldo);
+  contenedorRespaldo.insertAdjacentElement("afterend", contenedorBusqueda);
   contenedorBusqueda.insertAdjacentElement("afterend", mensajeBusqueda);
   mensajeBusqueda.insertAdjacentElement("afterend", contenedorFiltroEtiquetas);
   contenedorFiltroEtiquetas.insertAdjacentElement("afterend", contenedorFiltroFavoritas);
   contenedorFiltroFavoritas.insertAdjacentElement("afterend", contenedorOrden);
 } else {
   listaPublicaciones.parentElement.insertBefore(mensajeBusqueda, listaPublicaciones);
+  listaPublicaciones.parentElement.insertBefore(contenedorRespaldo, mensajeBusqueda);
   listaPublicaciones.parentElement.insertBefore(contenedorBusqueda, mensajeBusqueda);
   listaPublicaciones.parentElement.insertBefore(contenedorFiltroEtiquetas, listaPublicaciones);
   listaPublicaciones.parentElement.insertBefore(contenedorFiltroFavoritas, listaPublicaciones);
