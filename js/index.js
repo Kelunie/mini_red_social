@@ -97,6 +97,7 @@ function normalizarPublicaciones(items) {
       fecha: item.fecha || new Date().toISOString(),
       comentarios: normalizarComentarios(item.comentarios),
       etiqueta: normalizarEtiqueta(item.etiqueta),
+      favorito: typeof item.favorito === "boolean" ? item.favorito : false,
     };
   });
 }
@@ -268,6 +269,20 @@ opcionesFiltroEtiquetas.forEach(function (opcion) {
 contenedorFiltroEtiquetas.appendChild(etiquetaFiltro);
 contenedorFiltroEtiquetas.appendChild(grupoFiltroEtiquetas);
 
+let mostrarSoloFavoritas = false;
+
+const contenedorFiltroFavoritas = document.createElement("div");
+contenedorFiltroFavoritas.className = "mb-3 bloque-filtro-favoritas";
+
+const botonFiltroFavoritas = document.createElement("button");
+botonFiltroFavoritas.type = "button";
+botonFiltroFavoritas.className = "filtro-favoritas-btn";
+botonFiltroFavoritas.id = "boton-filtro-favoritas";
+botonFiltroFavoritas.setAttribute("aria-pressed", "false");
+botonFiltroFavoritas.textContent = "⭐ Solo favoritas";
+
+contenedorFiltroFavoritas.appendChild(botonFiltroFavoritas);
+
 function actualizarBotonesFiltroEtiquetas() {
   grupoFiltroEtiquetas.querySelectorAll(".filtro-etiqueta-btn").forEach(function (boton) {
     boton.classList.toggle("active", boton.dataset.valorFiltro === filtroEtiquetaActual);
@@ -303,11 +318,13 @@ if (tituloMuro && tituloMuro.parentElement) {
   tituloMuro.insertAdjacentElement("afterend", contenedorBusqueda);
   contenedorBusqueda.insertAdjacentElement("afterend", mensajeBusqueda);
   mensajeBusqueda.insertAdjacentElement("afterend", contenedorFiltroEtiquetas);
-  contenedorFiltroEtiquetas.insertAdjacentElement("afterend", contenedorOrden);
+  contenedorFiltroEtiquetas.insertAdjacentElement("afterend", contenedorFiltroFavoritas);
+  contenedorFiltroFavoritas.insertAdjacentElement("afterend", contenedorOrden);
 } else {
   listaPublicaciones.parentElement.insertBefore(mensajeBusqueda, listaPublicaciones);
   listaPublicaciones.parentElement.insertBefore(contenedorBusqueda, mensajeBusqueda);
   listaPublicaciones.parentElement.insertBefore(contenedorFiltroEtiquetas, listaPublicaciones);
+  listaPublicaciones.parentElement.insertBefore(contenedorFiltroFavoritas, listaPublicaciones);
   listaPublicaciones.parentElement.insertBefore(contenedorOrden, listaPublicaciones);
 }
 
@@ -324,6 +341,14 @@ if (tituloMuro && tituloMuro.parentElement) {
       guardarBorrador();
     });
   }
+}
+
+botonFiltroFavoritas.addEventListener("click", function () {
+  mostrarSoloFavoritas = !mostrarSoloFavoritas;
+  botonFiltroFavoritas.classList.toggle("active", mostrarSoloFavoritas);
+  botonFiltroFavoritas.setAttribute("aria-pressed", mostrarSoloFavoritas ? "true" : "false");
+  renderPublicaciones();
+});
 
 function normalizarTexto(texto) {
   return String(texto || "").trim().toLowerCase();
@@ -381,11 +406,17 @@ function obtenerPublicacionesFiltradas() {
           return publicacion.etiqueta === filtroEtiquetaActual;
         });
 
+  const publicacionesPorFavorito = mostrarSoloFavoritas
+    ? publicacionesPorEtiqueta.filter(function (publicacion) {
+        return publicacion.favorito === true;
+      })
+    : publicacionesPorEtiqueta;
+
   if (terminoBusqueda === "") {
-    return publicacionesPorEtiqueta;
+    return publicacionesPorFavorito;
   }
 
-  return publicacionesPorEtiqueta.filter(function (publicacion) {
+  return publicacionesPorFavorito.filter(function (publicacion) {
     const nombre = normalizarTexto(publicacion.nombre);
     const mensaje = normalizarTexto(publicacion.mensaje);
 
@@ -479,10 +510,15 @@ function actualizarEstadoBusqueda(cantidadResultados) {
   const terminoBusqueda = normalizarTexto(inputBusqueda.value);
   const hayFiltroEtiqueta = filtroEtiquetaActual !== "Todas";
   const sinCoincidencias =
-    (terminoBusqueda !== "" || hayFiltroEtiqueta) && cantidadResultados === 0 && publicaciones.length > 0;
+    (terminoBusqueda !== "" || hayFiltroEtiqueta || mostrarSoloFavoritas) &&
+    cantidadResultados === 0 &&
+    publicaciones.length > 0;
 
   if (sinCoincidencias) {
-    mensajeBusqueda.textContent = "No se encontraron coincidencias.";
+    mensajeBusqueda.textContent =
+      mostrarSoloFavoritas && terminoBusqueda === "" && !hayFiltroEtiqueta
+        ? "No tienes publicaciones favoritas todavía."
+        : "No se encontraron coincidencias.";
     mensajeBusqueda.classList.remove("d-none");
     return;
   }
@@ -528,6 +564,7 @@ form.addEventListener("submit", function (evento) {
     fecha: new Date().toISOString(),
     comentarios: [],
     etiqueta: normalizarEtiqueta(inputEtiqueta.value),
+    favorito: false,
   };
 
   publicaciones.unshift(publicacion);
@@ -576,6 +613,21 @@ function eliminarPublicacion(id) {
   publicaciones = publicaciones.filter(function (item) {
     return item.id !== id;
   });
+
+  guardarPublicaciones();
+  renderPublicaciones();
+}
+
+function alternarFavorito(id) {
+  const publicacion = publicaciones.find(function (item) {
+    return item.id === id;
+  });
+
+  if (!publicacion) {
+    return;
+  }
+
+  publicacion.favorito = !publicacion.favorito;
 
   guardarPublicaciones();
   renderPublicaciones();
@@ -716,6 +768,14 @@ function cancelarEdicion() {
 }
 
 listaPublicaciones.addEventListener("click", function (evento) {
+  const botonFavorito = evento.target.closest(".btn-favorito");
+
+  if (botonFavorito) {
+    const idFavorito = Number(botonFavorito.dataset.publicacionId);
+    alternarFavorito(idFavorito);
+    return;
+  }
+
   const botonEliminar = evento.target.closest(".btn-eliminar");
 
   if (botonEliminar) {
@@ -1022,8 +1082,18 @@ function renderPublicaciones() {
     badgeEtiqueta.className = `badge-etiqueta badge-etiqueta-${etiquetaPublicacion.toLowerCase()}`;
     badgeEtiqueta.textContent = etiquetaPublicacion;
 
+    const esFavorita = publicacion.favorito === true;
+    const botonFavorito = document.createElement("button");
+    botonFavorito.type = "button";
+    botonFavorito.className = esFavorita ? "btn-favorito active" : "btn-favorito";
+    botonFavorito.dataset.publicacionId = publicacion.id;
+    botonFavorito.title = esFavorita ? "Quitar de favoritos" : "Marcar como favorita";
+    botonFavorito.setAttribute("aria-pressed", esFavorita ? "true" : "false");
+    botonFavorito.textContent = esFavorita ? "★ Favorita" : "☆ Favorita";
+
     encabezado.appendChild(nombre);
     encabezado.appendChild(badgeEtiqueta);
+    encabezado.appendChild(botonFavorito);
 
     const enEdicion = publicacion.id === publicacionEnEdicionId;
 

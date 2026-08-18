@@ -214,6 +214,33 @@ body {
   box-shadow: 0 6px 14px rgba(217, 102, 46, 0.25);
 }
 
+.bloque-filtro-favoritas {
+  display: flex;
+}
+
+.filtro-favoritas-btn {
+  background: #fff;
+  border: 1px solid #e4d1b7;
+  border-radius: 999px;
+  color: #4b341f;
+  cursor: pointer;
+  padding: 0.42rem 0.9rem;
+  font-weight: 600;
+  font-size: 0.86rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.filtro-favoritas-btn:hover {
+  border-color: #f0b93c;
+}
+
+.filtro-favoritas-btn.active {
+  background: linear-gradient(135deg, #f0b93c 0%, #f08a3c 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(240, 137, 60, 0.25);
+}
+
 .badge-etiqueta {
   display: inline-block;
   font-size: 0.72rem;
@@ -250,6 +277,30 @@ body {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.btn-favorito {
+  background: #fff;
+  border: 1px solid #e4d1b7;
+  border-radius: 999px;
+  color: #a17a3a;
+  cursor: pointer;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-left: auto;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.btn-favorito:hover {
+  border-color: #d9662e;
+}
+
+.btn-favorito.active {
+  background: linear-gradient(135deg, #f0b93c 0%, #f08a3c 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(240, 137, 60, 0.28);
 }
 
 #lista-publicaciones {
