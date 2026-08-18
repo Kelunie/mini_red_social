@@ -807,3 +807,43 @@ body {
   font-size: 0.78rem;
   margin-top: 0.1rem;
 }
+
+/* ── H18: Paginación de publicaciones ── */
+
+.bloque-paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn-pagina-anterior,
+.btn-pagina-siguiente {
+  background: #fff;
+  border: 1px solid #e4d1b7;
+  border-radius: 999px;
+  color: #4b341f;
+  cursor: pointer;
+  padding: 0.42rem 1rem;
+  font-weight: 600;
+  font-size: 0.86rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.btn-pagina-anterior:hover:not(:disabled),
+.btn-pagina-siguiente:hover:not(:disabled) {
+  border-color: #d9662e;
+}
+
+.btn-pagina-anterior:disabled,
+.btn-pagina-siguiente:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.indicador-pagina {
+  color: #7d4b16;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
