@@ -1,5 +1,8 @@
 const STORAGE_KEY = "publicaciones";
 
+// H17: clave para borrador automático (guardar solo los campos necesarios)
+const DRAFT_KEY = "borrador_publicacion";
+
 const ETIQUETAS_VALIDAS = ["General", "Estudio", "Evento", "Ayuda"];
 const ETIQUETA_POR_DEFECTO = "General";
 
@@ -22,6 +25,36 @@ function obtenerLikesIniciales() {
 
 function generarId() {
   return Date.now() + Math.floor(Math.random() * 1000000);
+}
+
+// Funciones de borrador (H17)
+function guardarBorrador() {
+  try {
+    const borrador = {
+      nombre: (typeof inputNombre !== 'undefined' && inputNombre) ? inputNombre.value : "",
+      mensaje: (typeof inputMensaje !== 'undefined' && inputMensaje) ? inputMensaje.value : "",
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(borrador));
+  } catch (e) {
+    // fallar silenciosamente si localStorage no está disponible
+  }
+}
+
+function cargarBorrador() {
+  try {
+    const datos = localStorage.getItem(DRAFT_KEY);
+    return datos ? JSON.parse(datos) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function eliminarBorrador() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch (e) {
+    // ignore
+  }
 }
 
 function normalizarComentarios(comentarios) {
@@ -278,6 +311,20 @@ if (tituloMuro && tituloMuro.parentElement) {
   listaPublicaciones.parentElement.insertBefore(contenedorOrden, listaPublicaciones);
 }
 
+  // Restaurar borrador si existe (H17)
+  const _borrador_inicial = cargarBorrador();
+  if (_borrador_inicial) {
+    inputNombre.value = _borrador_inicial.nombre || "";
+    inputMensaje.value = _borrador_inicial.mensaje || "";
+  }
+
+  // Guardar borrador al escribir en el nombre
+  if (inputNombre) {
+    inputNombre.addEventListener("input", function () {
+      guardarBorrador();
+    });
+  }
+
 function normalizarTexto(texto) {
   return String(texto || "").trim().toLowerCase();
 }
@@ -488,12 +535,15 @@ form.addEventListener("submit", function (evento) {
   renderPublicaciones();
 
   form.reset();
+  // Publicación exitosa: eliminar borrador (H17)
+  eliminarBorrador();
   actualizarContadorCaracteres(inputMensaje, LIMITE_MENSAJE, contadorMensajePublicacion);
 });
 
 inputMensaje.addEventListener("input", function () {
   actualizarContadorCaracteres(inputMensaje, LIMITE_MENSAJE, contadorMensajePublicacion);
   ocultarErrorLongitudPublicacion();
+  guardarBorrador();
 });
 
 inputBusqueda.addEventListener("input", function () {
@@ -504,6 +554,17 @@ formBusqueda.addEventListener("submit", function (evento) {
   evento.preventDefault();
   renderPublicaciones();
 });
+
+// Botón: Descartar borrador (H17)
+const btnDescartar = document.getElementById("btn-descartar-borrador");
+if (btnDescartar) {
+  btnDescartar.addEventListener("click", function () {
+    eliminarBorrador();
+    form.reset();
+    actualizarContadorCaracteres(inputMensaje, LIMITE_MENSAJE, contadorMensajePublicacion);
+    mensajeBusqueda.classList.add("d-none");
+  });
+}
 
 function eliminarPublicacion(id) {
   const confirmado = confirm("¿Seguro que deseas eliminar esta publicación?");
