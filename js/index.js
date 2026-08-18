@@ -1,5 +1,12 @@
 const STORAGE_KEY = "publicaciones";
 
+const ETIQUETAS_VALIDAS = ["General", "Estudio", "Evento", "Ayuda"];
+const ETIQUETA_POR_DEFECTO = "General";
+
+function normalizarEtiqueta(etiqueta) {
+  return ETIQUETAS_VALIDAS.includes(etiqueta) ? etiqueta : ETIQUETA_POR_DEFECTO;
+}
+
 function cargarPublicaciones() {
   const datos = localStorage.getItem(STORAGE_KEY);
   return datos ? JSON.parse(datos) : [];
@@ -27,6 +34,7 @@ function normalizarComentarios(comentarios) {
       ...comentario,
       id: comentario.id || generarId(),
       fecha: comentario.fecha || new Date().toISOString(),
+      respuestas: Array.isArray(comentario.respuestas) ? comentario.respuestas : [],
     };
   });
 }
@@ -53,9 +61,10 @@ function normalizarPublicaciones(items) {
         funny: typeof reactions.funny === "number" ? reactions.funny : 0,
       },
       userReactions: item.userReactions || {},
-      favorito: typeof item.favorito === "boolean" ? item.favorito : false,
       fecha: item.fecha || new Date().toISOString(),
       comentarios: normalizarComentarios(item.comentarios),
+      etiqueta: normalizarEtiqueta(item.etiqueta),
+      favorito: typeof item.favorito === "boolean" ? item.favorito : false,
     };
   });
 }
@@ -104,12 +113,14 @@ function alternarReaccion(id, tipo) {
 let publicaciones = normalizarPublicaciones(cargarPublicaciones());
 let publicacionEnEdicionId = null;
 let comentarioEnEdicion = null;
+let respuestaActiva = null;
 const LIMITE_MENSAJE = 200;
 const LIMITE_COMENTARIO = LIMITE_MENSAJE;
 
 const form = document.getElementById("form-publicacion");
 const inputNombre = document.getElementById("input-nombre");
 const inputMensaje = document.getElementById("input-mensaje");
+const inputEtiqueta = document.getElementById("input-etiqueta");
 const listaPublicaciones = document.getElementById("lista-publicaciones");
 const tituloMuro = document.querySelector(".titulo-muro");
 
@@ -132,20 +143,7 @@ contenedorBusqueda.className = "mb-3";
 const contenedorOrden = document.createElement("div");
 contenedorOrden.className = "mb-3 bloque-orden";
 
-const contenedorFavoritas = document.createElement("div");
-contenedorFavoritas.className = "mb-3 bloque-favoritas";
-
 let criterioOrdenPublicaciones = "recientes";
-let filtroSoloFavoritas = false;
-
-const botonFiltroFavoritas = document.createElement("button");
-botonFiltroFavoritas.type = "button";
-botonFiltroFavoritas.className = "boton-filtro-favoritas";
-botonFiltroFavoritas.id = "boton-filtro-favoritas";
-botonFiltroFavoritas.setAttribute("aria-pressed", "false");
-botonFiltroFavoritas.textContent = "☆ Mostrar solo favoritas";
-
-contenedorFavoritas.appendChild(botonFiltroFavoritas);
 
 const etiquetaBusqueda = document.createElement("label");
 etiquetaBusqueda.className = "form-label fw-semibold";
@@ -209,6 +207,71 @@ mensajeBusqueda.className = "mensaje-busqueda d-none d-block mt-1";
 mensajeBusqueda.setAttribute("role", "status");
 mensajeBusqueda.setAttribute("aria-live", "polite");
 
+let filtroEtiquetaActual = "Todas";
+
+const contenedorFiltroEtiquetas = document.createElement("div");
+contenedorFiltroEtiquetas.className = "mb-3 bloque-filtro-etiquetas";
+
+const etiquetaFiltro = document.createElement("label");
+etiquetaFiltro.className = "form-label fw-semibold";
+etiquetaFiltro.textContent = "Filtrar por etiqueta";
+
+const grupoFiltroEtiquetas = document.createElement("div");
+grupoFiltroEtiquetas.className = "filtro-etiquetas";
+grupoFiltroEtiquetas.setAttribute("role", "group");
+grupoFiltroEtiquetas.setAttribute("aria-label", "Filtrar publicaciones por etiqueta");
+
+const opcionesFiltroEtiquetas = ["Todas"].concat(ETIQUETAS_VALIDAS);
+
+opcionesFiltroEtiquetas.forEach(function (opcion) {
+  const botonFiltro = document.createElement("button");
+  botonFiltro.type = "button";
+  botonFiltro.className = "filtro-etiqueta-btn";
+  botonFiltro.classList.toggle("active", opcion === filtroEtiquetaActual);
+  botonFiltro.dataset.valorFiltro = opcion;
+  botonFiltro.textContent = opcion;
+  grupoFiltroEtiquetas.appendChild(botonFiltro);
+});
+
+contenedorFiltroEtiquetas.appendChild(etiquetaFiltro);
+contenedorFiltroEtiquetas.appendChild(grupoFiltroEtiquetas);
+
+let mostrarSoloFavoritas = false;
+
+const contenedorFiltroFavoritas = document.createElement("div");
+contenedorFiltroFavoritas.className = "mb-3 bloque-filtro-favoritas";
+
+const botonFiltroFavoritas = document.createElement("button");
+botonFiltroFavoritas.type = "button";
+botonFiltroFavoritas.className = "filtro-favoritas-btn";
+botonFiltroFavoritas.id = "boton-filtro-favoritas";
+botonFiltroFavoritas.setAttribute("aria-pressed", "false");
+botonFiltroFavoritas.textContent = "⭐ Solo favoritas";
+
+contenedorFiltroFavoritas.appendChild(botonFiltroFavoritas);
+
+function actualizarBotonesFiltroEtiquetas() {
+  grupoFiltroEtiquetas.querySelectorAll(".filtro-etiqueta-btn").forEach(function (boton) {
+    boton.classList.toggle("active", boton.dataset.valorFiltro === filtroEtiquetaActual);
+  });
+}
+
+function cambiarFiltroEtiqueta(nuevoFiltro) {
+  filtroEtiquetaActual = nuevoFiltro;
+  actualizarBotonesFiltroEtiquetas();
+  renderPublicaciones();
+}
+
+grupoFiltroEtiquetas.addEventListener("click", function (evento) {
+  const boton = evento.target.closest(".filtro-etiqueta-btn");
+
+  if (!boton) {
+    return;
+  }
+
+  cambiarFiltroEtiqueta(boton.dataset.valorFiltro);
+});
+
 formBusqueda.appendChild(inputBusqueda);
 formBusqueda.appendChild(botonBusqueda);
 contenedorBusqueda.appendChild(etiquetaBusqueda);
@@ -221,14 +284,23 @@ contenedorOrden.appendChild(contenedorDropdownOrden);
 if (tituloMuro && tituloMuro.parentElement) {
   tituloMuro.insertAdjacentElement("afterend", contenedorBusqueda);
   contenedorBusqueda.insertAdjacentElement("afterend", mensajeBusqueda);
-  mensajeBusqueda.insertAdjacentElement("afterend", contenedorOrden);
-  contenedorOrden.insertAdjacentElement("afterend", contenedorFavoritas);
+  mensajeBusqueda.insertAdjacentElement("afterend", contenedorFiltroEtiquetas);
+  contenedorFiltroEtiquetas.insertAdjacentElement("afterend", contenedorFiltroFavoritas);
+  contenedorFiltroFavoritas.insertAdjacentElement("afterend", contenedorOrden);
 } else {
   listaPublicaciones.parentElement.insertBefore(mensajeBusqueda, listaPublicaciones);
   listaPublicaciones.parentElement.insertBefore(contenedorBusqueda, mensajeBusqueda);
+  listaPublicaciones.parentElement.insertBefore(contenedorFiltroEtiquetas, listaPublicaciones);
+  listaPublicaciones.parentElement.insertBefore(contenedorFiltroFavoritas, listaPublicaciones);
   listaPublicaciones.parentElement.insertBefore(contenedorOrden, listaPublicaciones);
-  listaPublicaciones.parentElement.insertBefore(contenedorFavoritas, listaPublicaciones);
 }
+
+botonFiltroFavoritas.addEventListener("click", function () {
+  mostrarSoloFavoritas = !mostrarSoloFavoritas;
+  botonFiltroFavoritas.classList.toggle("active", mostrarSoloFavoritas);
+  botonFiltroFavoritas.setAttribute("aria-pressed", mostrarSoloFavoritas ? "true" : "false");
+  renderPublicaciones();
+});
 
 function normalizarTexto(texto) {
   return String(texto || "").trim().toLowerCase();
@@ -279,24 +351,29 @@ actualizarContadorCaracteres(inputMensaje, LIMITE_MENSAJE, contadorMensajePublic
 function obtenerPublicacionesFiltradas() {
   const terminoBusqueda = normalizarTexto(inputBusqueda.value);
 
-  let resultado = publicaciones;
+  const publicacionesPorEtiqueta =
+    filtroEtiquetaActual === "Todas"
+      ? publicaciones
+      : publicaciones.filter(function (publicacion) {
+          return publicacion.etiqueta === filtroEtiquetaActual;
+        });
 
-  if (terminoBusqueda !== "") {
-    resultado = resultado.filter(function (publicacion) {
-      const nombre = normalizarTexto(publicacion.nombre);
-      const mensaje = normalizarTexto(publicacion.mensaje);
+  const publicacionesPorFavorito = mostrarSoloFavoritas
+    ? publicacionesPorEtiqueta.filter(function (publicacion) {
+        return publicacion.favorito === true;
+      })
+    : publicacionesPorEtiqueta;
 
-      return nombre.includes(terminoBusqueda) || mensaje.includes(terminoBusqueda);
-    });
+  if (terminoBusqueda === "") {
+    return publicacionesPorFavorito;
   }
 
-  if (filtroSoloFavoritas) {
-    resultado = resultado.filter(function (publicacion) {
-      return publicacion.favorito === true;
-    });
-  }
+  return publicacionesPorFavorito.filter(function (publicacion) {
+    const nombre = normalizarTexto(publicacion.nombre);
+    const mensaje = normalizarTexto(publicacion.mensaje);
 
-  return resultado;
+    return nombre.includes(terminoBusqueda) || mensaje.includes(terminoBusqueda);
+  });
 }
 
 function obtenerPopularidad(publicacion) {
@@ -381,28 +458,19 @@ document.addEventListener("click", function (evento) {
   }
 });
 
-function actualizarTextoFiltroFavoritas() {
-  botonFiltroFavoritas.classList.toggle("active", filtroSoloFavoritas);
-  botonFiltroFavoritas.setAttribute("aria-pressed", filtroSoloFavoritas ? "true" : "false");
-  botonFiltroFavoritas.textContent = filtroSoloFavoritas
-    ? "★ Mostrando solo favoritas"
-    : "☆ Mostrar solo favoritas";
-}
-
-function alternarFiltroFavoritas() {
-  filtroSoloFavoritas = !filtroSoloFavoritas;
-  actualizarTextoFiltroFavoritas();
-  renderPublicaciones();
-}
-
-botonFiltroFavoritas.addEventListener("click", alternarFiltroFavoritas);
-
 function actualizarEstadoBusqueda(cantidadResultados) {
   const terminoBusqueda = normalizarTexto(inputBusqueda.value);
-  const sinCoincidencias = terminoBusqueda !== "" && cantidadResultados === 0;
+  const hayFiltroEtiqueta = filtroEtiquetaActual !== "Todas";
+  const sinCoincidencias =
+    (terminoBusqueda !== "" || hayFiltroEtiqueta || mostrarSoloFavoritas) &&
+    cantidadResultados === 0 &&
+    publicaciones.length > 0;
 
   if (sinCoincidencias) {
-    mensajeBusqueda.textContent = "No se encontraron coincidencias.";
+    mensajeBusqueda.textContent =
+      mostrarSoloFavoritas && terminoBusqueda === "" && !hayFiltroEtiqueta
+        ? "No tienes publicaciones favoritas todavía."
+        : "No se encontraron coincidencias.";
     mensajeBusqueda.classList.remove("d-none");
     return;
   }
@@ -445,9 +513,10 @@ form.addEventListener("submit", function (evento) {
       funny: 0,
     },
     userReactions: {},
-    favorito: false,
     fecha: new Date().toISOString(),
     comentarios: [],
+    etiqueta: normalizarEtiqueta(inputEtiqueta.value),
+    favorito: false,
   };
 
   publicaciones.unshift(publicacion);
@@ -487,6 +556,21 @@ function eliminarPublicacion(id) {
   renderPublicaciones();
 }
 
+function alternarFavorito(id) {
+  const publicacion = publicaciones.find(function (item) {
+    return item.id === id;
+  });
+
+  if (!publicacion) {
+    return;
+  }
+
+  publicacion.favorito = !publicacion.favorito;
+
+  guardarPublicaciones();
+  renderPublicaciones();
+}
+
 function agregarComentario(id, nombreComentario, textoComentario) {
   const publicacion = publicaciones.find(function (item) {
     return item.id === id;
@@ -500,6 +584,37 @@ function agregarComentario(id, nombreComentario, textoComentario) {
     id: generarId(),
     nombre: nombreComentario,
     texto: textoComentario,
+    fecha: new Date().toISOString(),
+    respuestas: [],
+  });
+
+  guardarPublicaciones();
+  renderPublicaciones();
+}
+
+function agregarRespuesta(publicacionId, comentarioId, nombreRespuesta, textoRespuesta) {
+  const publicacion = buscarPublicacion(publicacionId);
+
+  if (!publicacion) {
+    return;
+  }
+
+  const comentario = publicacion.comentarios.find(function (item) {
+    return item.id === comentarioId;
+  });
+
+  if (!comentario) {
+    return;
+  }
+
+  if (!Array.isArray(comentario.respuestas)) {
+    comentario.respuestas = [];
+  }
+
+  comentario.respuestas.push({
+    id: generarId(),
+    nombre: nombreRespuesta,
+    texto: textoRespuesta,
     fecha: new Date().toISOString(),
   });
 
@@ -575,21 +690,6 @@ function eliminarComentario(publicacionId, comentarioId) {
   ) {
     comentarioEnEdicion = null;
   }
-
-  guardarPublicaciones();
-  renderPublicaciones();
-}
-
-function alternarFavorito(id) {
-  const publicacion = publicaciones.find(function (item) {
-    return item.id === id;
-  });
-
-  if (!publicacion) {
-    return;
-  }
-
-  publicacion.favorito = !publicacion.favorito;
 
   guardarPublicaciones();
   renderPublicaciones();
@@ -763,6 +863,60 @@ listaPublicaciones.addEventListener("click", function (evento) {
     return;
   }
 
+  const botonResponder = evento.target.closest(".btn-responder");
+
+  if (botonResponder) {
+    const publicacionId = Number(botonResponder.dataset.publicacionId);
+    const comentarioId = Number(botonResponder.dataset.comentarioId);
+
+    if (
+      respuestaActiva &&
+      respuestaActiva.publicacionId === publicacionId &&
+      respuestaActiva.comentarioId === comentarioId
+    ) {
+      respuestaActiva = null;
+    } else {
+      respuestaActiva = { publicacionId: publicacionId, comentarioId: comentarioId };
+    }
+
+    renderPublicaciones();
+    return;
+  }
+
+  const botonCancelarRespuesta = evento.target.closest(".btn-cancelar-respuesta");
+
+  if (botonCancelarRespuesta) {
+    respuestaActiva = null;
+    renderPublicaciones();
+    return;
+  }
+
+  const botonEnviarRespuesta = evento.target.closest(".btn-enviar-respuesta");
+
+  if (botonEnviarRespuesta) {
+    const contenedorRespuesta = botonEnviarRespuesta.closest(".form-respuesta");
+    const inputNombreRespuesta = contenedorRespuesta.querySelector(".input-nombre-respuesta");
+    const inputTextoRespuesta = contenedorRespuesta.querySelector(".input-texto-respuesta");
+    const errorRespuesta = contenedorRespuesta.querySelector(".error-respuesta");
+
+    const nombreRespuesta = inputNombreRespuesta.value.trim();
+    const textoRespuesta = inputTextoRespuesta.value.trim();
+
+    if (nombreRespuesta === "" || textoRespuesta === "") {
+      errorRespuesta.textContent = "El nombre y la respuesta son obligatorios.";
+      errorRespuesta.classList.remove("d-none");
+      return;
+    }
+
+    errorRespuesta.classList.add("d-none");
+
+    const publicacionId = Number(botonEnviarRespuesta.dataset.publicacionId);
+    const comentarioId = Number(botonEnviarRespuesta.dataset.comentarioId);
+    respuestaActiva = null;
+    agregarRespuesta(publicacionId, comentarioId, nombreRespuesta, textoRespuesta);
+    return;
+  }
+
   const boton = evento.target.closest(".reaction-btn");
 
   if (!boton) {
@@ -854,9 +1008,30 @@ function renderPublicaciones() {
     const nota = document.createElement("div");
     nota.className = "nota";
 
+    const encabezado = document.createElement("div");
+    encabezado.className = "nota-encabezado";
+
     const nombre = document.createElement("p");
-    nombre.className = "nota-nombre";
+    nombre.className = "nota-nombre mb-0";
     nombre.textContent = publicacion.nombre;
+
+    const etiquetaPublicacion = normalizarEtiqueta(publicacion.etiqueta);
+    const badgeEtiqueta = document.createElement("span");
+    badgeEtiqueta.className = `badge-etiqueta badge-etiqueta-${etiquetaPublicacion.toLowerCase()}`;
+    badgeEtiqueta.textContent = etiquetaPublicacion;
+
+    const esFavorita = publicacion.favorito === true;
+    const botonFavorito = document.createElement("button");
+    botonFavorito.type = "button";
+    botonFavorito.className = esFavorita ? "btn-favorito active" : "btn-favorito";
+    botonFavorito.dataset.publicacionId = publicacion.id;
+    botonFavorito.title = esFavorita ? "Quitar de favoritos" : "Marcar como favorita";
+    botonFavorito.setAttribute("aria-pressed", esFavorita ? "true" : "false");
+    botonFavorito.textContent = esFavorita ? "★ Favorita" : "☆ Favorita";
+
+    encabezado.appendChild(nombre);
+    encabezado.appendChild(badgeEtiqueta);
+    encabezado.appendChild(botonFavorito);
 
     const enEdicion = publicacion.id === publicacionEnEdicionId;
 
@@ -927,16 +1102,6 @@ function renderPublicaciones() {
 
     const botonesGestion = document.createElement("div");
     botonesGestion.className = "botones-gestion";
-
-    const botonFavorito = document.createElement("button");
-    botonFavorito.type = "button";
-    botonFavorito.className = publicacion.favorito ? "btn-favorito active" : "btn-favorito";
-    botonFavorito.dataset.publicacionId = publicacion.id;
-    botonFavorito.title = publicacion.favorito ? "Quitar de favoritos" : "Marcar como favorita";
-    botonFavorito.setAttribute("aria-pressed", publicacion.favorito ? "true" : "false");
-    botonFavorito.textContent = publicacion.favorito ? "★ Favorita" : "☆ Favorita";
-
-    botonesGestion.appendChild(botonFavorito);
 
     const botonEditar = document.createElement("button");
     botonEditar.type = "button";
@@ -1043,10 +1208,102 @@ function renderPublicaciones() {
         botonEliminarComentario.title = "Eliminar comentario";
         botonEliminarComentario.textContent = "Eliminar";
 
+        const botonResponder = document.createElement("button");
+        botonResponder.type = "button";
+        botonResponder.className = "btn-responder";
+        botonResponder.dataset.publicacionId = publicacion.id;
+        botonResponder.dataset.comentarioId = comentario.id;
+        botonResponder.title = "Responder comentario";
+        botonResponder.textContent = "Responder";
+
         itemComentario.appendChild(textoComentario);
         itemComentario.appendChild(fechaComentario);
         itemComentario.appendChild(botonEditarComentario);
         itemComentario.appendChild(botonEliminarComentario);
+        itemComentario.appendChild(botonResponder);
+
+        // Renderizar respuestas existentes debajo del comentario
+        const respuestas = Array.isArray(comentario.respuestas) ? comentario.respuestas : [];
+
+        if (respuestas.length > 0) {
+          const listaRespuestas = document.createElement("div");
+          listaRespuestas.className = "lista-respuestas";
+
+          respuestas.forEach(function (respuesta) {
+            const itemRespuesta = document.createElement("div");
+            itemRespuesta.className = "respuesta-item";
+
+            const nombreRespuesta = document.createElement("span");
+            nombreRespuesta.className = "respuesta-nombre";
+            nombreRespuesta.textContent = respuesta.nombre;
+
+            const textoRespuesta = document.createElement("span");
+            textoRespuesta.className = "respuesta-texto";
+            textoRespuesta.textContent = respuesta.texto;
+
+            const fechaRespuesta = document.createElement("span");
+            fechaRespuesta.className = "respuesta-fecha";
+            fechaRespuesta.textContent = formatearFecha(respuesta.fecha);
+
+            itemRespuesta.appendChild(nombreRespuesta);
+            itemRespuesta.appendChild(textoRespuesta);
+            itemRespuesta.appendChild(fechaRespuesta);
+            listaRespuestas.appendChild(itemRespuesta);
+          });
+
+          itemComentario.appendChild(listaRespuestas);
+        }
+
+        // Formulario inline de respuesta (solo visible cuando respuestaActiva apunta a este comentario)
+        const formularioAbierto =
+          respuestaActiva &&
+          respuestaActiva.publicacionId === publicacion.id &&
+          respuestaActiva.comentarioId === comentario.id;
+
+        if (formularioAbierto) {
+          const formRespuesta = document.createElement("div");
+          formRespuesta.className = "form-respuesta";
+
+          const inputNombreRespuesta = document.createElement("input");
+          inputNombreRespuesta.type = "text";
+          inputNombreRespuesta.className = "form-control input-nombre-respuesta";
+          inputNombreRespuesta.placeholder = "Tu nombre";
+
+          const inputTextoRespuesta = document.createElement("input");
+          inputTextoRespuesta.type = "text";
+          inputTextoRespuesta.className = "form-control input-texto-respuesta";
+          inputTextoRespuesta.placeholder = "Escribe tu respuesta...";
+
+          const botonesRespuesta = document.createElement("div");
+          botonesRespuesta.className = "botones-respuesta";
+
+          const botonEnviarRespuesta = document.createElement("button");
+          botonEnviarRespuesta.type = "button";
+          botonEnviarRespuesta.className = "btn-enviar-respuesta";
+          botonEnviarRespuesta.dataset.publicacionId = publicacion.id;
+          botonEnviarRespuesta.dataset.comentarioId = comentario.id;
+          botonEnviarRespuesta.textContent = "Enviar";
+
+          const botonCancelarRespuesta = document.createElement("button");
+          botonCancelarRespuesta.type = "button";
+          botonCancelarRespuesta.className = "btn-cancelar-respuesta";
+          botonCancelarRespuesta.dataset.publicacionId = publicacion.id;
+          botonCancelarRespuesta.dataset.comentarioId = comentario.id;
+          botonCancelarRespuesta.textContent = "Cancelar";
+
+          const errorRespuesta = document.createElement("small");
+          errorRespuesta.className = "error-respuesta d-none";
+
+          botonesRespuesta.appendChild(botonEnviarRespuesta);
+          botonesRespuesta.appendChild(botonCancelarRespuesta);
+
+          formRespuesta.appendChild(inputNombreRespuesta);
+          formRespuesta.appendChild(inputTextoRespuesta);
+          formRespuesta.appendChild(botonesRespuesta);
+          formRespuesta.appendChild(errorRespuesta);
+
+          itemComentario.appendChild(formRespuesta);
+        }
       }
 
       seccionComentarios.appendChild(itemComentario);
@@ -1093,7 +1350,7 @@ function renderPublicaciones() {
 
     seccionComentarios.appendChild(formComentario);
 
-    nota.appendChild(nombre);
+    nota.appendChild(encabezado);
 
     if (enEdicion) {
       const textareaEdicion = document.createElement("textarea");
@@ -1156,4 +1413,3 @@ function renderPublicaciones() {
 
 renderPublicaciones();
 actualizarTextoOrden();
-actualizarTextoFiltroFavoritas();
