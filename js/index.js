@@ -150,6 +150,10 @@ let respuestaActiva = null;
 const LIMITE_MENSAJE = 200;
 const LIMITE_COMENTARIO = LIMITE_MENSAJE;
 
+// H18: paginación de publicaciones
+const PUBLICACIONES_POR_PAGINA = 5;
+let paginaActual = 1;
+
 const form = document.getElementById("form-publicacion");
 const inputNombre = document.getElementById("input-nombre");
 const inputMensaje = document.getElementById("input-mensaje");
@@ -283,6 +287,39 @@ botonFiltroFavoritas.textContent = "⭐ Solo favoritas";
 
 contenedorFiltroFavoritas.appendChild(botonFiltroFavoritas);
 
+// Controles de paginación (H18)
+const contenedorPaginacion = document.createElement("div");
+contenedorPaginacion.className = "bloque-paginacion";
+
+const botonPaginaAnterior = document.createElement("button");
+botonPaginaAnterior.type = "button";
+botonPaginaAnterior.className = "btn-pagina-anterior";
+botonPaginaAnterior.textContent = "Anterior";
+
+const indicadorPagina = document.createElement("span");
+indicadorPagina.className = "indicador-pagina";
+indicadorPagina.setAttribute("role", "status");
+indicadorPagina.setAttribute("aria-live", "polite");
+
+const botonPaginaSiguiente = document.createElement("button");
+botonPaginaSiguiente.type = "button";
+botonPaginaSiguiente.className = "btn-pagina-siguiente";
+botonPaginaSiguiente.textContent = "Siguiente";
+
+contenedorPaginacion.appendChild(botonPaginaAnterior);
+contenedorPaginacion.appendChild(indicadorPagina);
+contenedorPaginacion.appendChild(botonPaginaSiguiente);
+
+botonPaginaAnterior.addEventListener("click", function () {
+  paginaActual -= 1;
+  renderPublicaciones();
+});
+
+botonPaginaSiguiente.addEventListener("click", function () {
+  paginaActual += 1;
+  renderPublicaciones();
+});
+
 function actualizarBotonesFiltroEtiquetas() {
   grupoFiltroEtiquetas.querySelectorAll(".filtro-etiqueta-btn").forEach(function (boton) {
     boton.classList.toggle("active", boton.dataset.valorFiltro === filtroEtiquetaActual);
@@ -327,6 +364,8 @@ if (tituloMuro && tituloMuro.parentElement) {
   listaPublicaciones.parentElement.insertBefore(contenedorFiltroFavoritas, listaPublicaciones);
   listaPublicaciones.parentElement.insertBefore(contenedorOrden, listaPublicaciones);
 }
+
+listaPublicaciones.insertAdjacentElement("afterend", contenedorPaginacion);
 
   // Restaurar borrador si existe (H17)
   const _borrador_inicial = cargarBorrador();
@@ -1043,6 +1082,19 @@ function actualizarResumen() {
   }
 }
 
+function actualizarControlesPaginacion(totalPaginas, totalResultados) {
+  if (totalResultados === 0) {
+    indicadorPagina.textContent = "";
+    contenedorPaginacion.classList.add("d-none");
+    return;
+  }
+
+  contenedorPaginacion.classList.remove("d-none");
+  indicadorPagina.textContent = `Página ${paginaActual} de ${totalPaginas}`;
+  botonPaginaAnterior.disabled = paginaActual <= 1;
+  botonPaginaSiguiente.disabled = paginaActual >= totalPaginas;
+}
+
 function renderPublicaciones() {
   actualizarResumen();
   const publicacionesFiltradas = obtenerPublicacionesOrdenadas(obtenerPublicacionesFiltradas());
@@ -1051,6 +1103,15 @@ function renderPublicaciones() {
   listaPublicaciones.innerHTML = "";
 
   actualizarEstadoBusqueda(publicacionesFiltradas.length);
+
+  const totalPaginas = Math.max(1, Math.ceil(publicacionesFiltradas.length / PUBLICACIONES_POR_PAGINA));
+  if (paginaActual > totalPaginas) {
+    paginaActual = totalPaginas;
+  } else if (paginaActual < 1) {
+    paginaActual = 1;
+  }
+
+  actualizarControlesPaginacion(totalPaginas, publicacionesFiltradas.length);
 
   if (publicacionesFiltradas.length === 0) {
     if (publicaciones.length === 0 && terminoBusqueda === "") {
@@ -1065,7 +1126,10 @@ function renderPublicaciones() {
     return;
   }
 
-  publicacionesFiltradas.forEach(function (publicacion) {
+  const inicioPagina = (paginaActual - 1) * PUBLICACIONES_POR_PAGINA;
+  const publicacionesPagina = publicacionesFiltradas.slice(inicioPagina, inicioPagina + PUBLICACIONES_POR_PAGINA);
+
+  publicacionesPagina.forEach(function (publicacion) {
     const nota = document.createElement("div");
     nota.className = "nota";
 
