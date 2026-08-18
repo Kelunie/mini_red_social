@@ -341,7 +341,6 @@ if (tituloMuro && tituloMuro.parentElement) {
       guardarBorrador();
     });
   }
-}
 
 botonFiltroFavoritas.addEventListener("click", function () {
   mostrarSoloFavoritas = !mostrarSoloFavoritas;
