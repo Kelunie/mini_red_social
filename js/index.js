@@ -98,6 +98,8 @@ function normalizarPublicaciones(items) {
       comentarios: normalizarComentarios(item.comentarios),
       etiqueta: normalizarEtiqueta(item.etiqueta),
       favorito: typeof item.favorito === "boolean" ? item.favorito : false,
+      reportado: typeof item.reportado === "boolean" ? item.reportado : false,
+      reporte: item.reporte || null,
     };
   });
 }
@@ -145,6 +147,7 @@ function alternarReaccion(id, tipo) {
 
 let publicaciones = normalizarPublicaciones(cargarPublicaciones());
 let publicacionEnEdicionId = null;
+let publicacionEnReporteId = null;
 let comentarioEnEdicion = null;
 let respuestaActiva = null;
 const LIMITE_MENSAJE = 200;
@@ -934,6 +937,43 @@ function cancelarEdicion() {
 }
 
 listaPublicaciones.addEventListener("click", function (evento) {
+  const botonReportar = evento.target.closest(".btn-reportar");
+  if (botonReportar) {
+    const idReportar = Number(botonReportar.dataset.publicacionId);
+    publicacionEnReporteId = idReportar;
+    renderPublicaciones();
+    return;
+  }
+
+  const botonCancelarReporte = evento.target.closest(".btn-cancelar-reporte");
+  if (botonCancelarReporte) {
+    publicacionEnReporteId = null;
+    renderPublicaciones();
+    return;
+  }
+
+  const botonConfirmarReporte = evento.target.closest(".btn-confirmar-reporte");
+  if (botonConfirmarReporte) {
+    const idConfirmar = Number(botonConfirmarReporte.dataset.publicacionId);
+    const notaElement = botonConfirmarReporte.closest(".nota");
+    const selectElement = notaElement.querySelector(".select-motivo-reporte");
+    const motivo = selectElement ? selectElement.value : "Otro";
+
+    const publicacion = publicaciones.find(function (p) {
+      return p.id === idConfirmar;
+    });
+
+    if (publicacion) {
+      publicacion.reportado = true;
+      publicacion.reporte = { motivo: motivo };
+      guardarPublicaciones();
+    }
+
+    publicacionEnReporteId = null;
+    renderPublicaciones();
+    return;
+  }
+
   const botonFavorito = evento.target.closest(".btn-favorito");
 
   if (botonFavorito) {
@@ -1208,6 +1248,15 @@ function actualizarResumen() {
   if (elAngries) {
     elAngries.textContent = reactionTotals.angry;
   }
+
+  const totalReportes = publicaciones.filter(function (p) {
+    return p.reportado === true;
+  }).length;
+  const badgeReportes = document.getElementById("badge-total-reportes");
+  if (badgeReportes) {
+    badgeReportes.textContent = totalReportes;
+    badgeReportes.style.display = totalReportes > 0 ? "inline-block" : "none";
+  }
 }
 
 function actualizarControlesPaginacion(totalPaginas, totalResultados) {
@@ -1372,6 +1421,16 @@ function renderPublicaciones() {
 
     botonesGestion.appendChild(botonEditar);
     botonesGestion.appendChild(botonEliminar);
+
+    if (publicacion.reportado !== true) {
+      const botonReportar = document.createElement("button");
+      botonReportar.type = "button";
+      botonReportar.className = "btn-reportar";
+      botonReportar.dataset.publicacionId = publicacion.id;
+      botonReportar.title = "Reportar publicación";
+      botonReportar.textContent = "Reportar";
+      botonesGestion.appendChild(botonReportar);
+    }
 
     const seccionComentarios = document.createElement("div");
     seccionComentarios.className = "seccion-comentarios";
@@ -1655,8 +1714,71 @@ function renderPublicaciones() {
     } else {
       nota.appendChild(mensaje);
       nota.appendChild(fecha);
+
+      if (publicacion.reportado === true) {
+        const alertaReporte = document.createElement("div");
+        alertaReporte.className = "alerta-reportada alert alert-warning py-1 px-2 mt-2 mb-1 rounded";
+        alertaReporte.innerHTML = `⚠️ <strong>Publicación Reportada:</strong> ${publicacion.reporte.motivo}`;
+        nota.appendChild(alertaReporte);
+      }
+
       nota.appendChild(acciones);
-      nota.appendChild(botonesGestion);
+
+      if (publicacion.id === publicacionEnReporteId) {
+        const formReportar = document.createElement("div");
+        formReportar.className = "form-reportar mt-2";
+
+        const label = document.createElement("label");
+        label.className = "form-label fw-semibold small mb-1";
+        label.textContent = "Selecciona el motivo del reporte:";
+
+        const select = document.createElement("select");
+        select.className = "form-select form-select-sm mb-2 select-motivo-reporte";
+        select.dataset.publicacionId = publicacion.id;
+
+        const optSpam = document.createElement("option");
+        optSpam.value = "Spam";
+        optSpam.textContent = "Spam";
+
+        const optOfensivo = document.createElement("option");
+        optOfensivo.value = "Ofensivo";
+        optOfensivo.textContent = "Ofensivo";
+
+        const optOtro = document.createElement("option");
+        optOtro.value = "Otro";
+        optOtro.textContent = "Otro";
+
+        select.appendChild(optSpam);
+        select.appendChild(optOfensivo);
+        select.appendChild(optOtro);
+
+        const botonesReporte = document.createElement("div");
+        botonesReporte.className = "d-flex gap-2";
+
+        const btnConfirmar = document.createElement("button");
+        btnConfirmar.type = "button";
+        btnConfirmar.className = "btn-confirmar-reporte";
+        btnConfirmar.dataset.publicacionId = publicacion.id;
+        btnConfirmar.textContent = "Confirmar";
+
+        const btnCancelar = document.createElement("button");
+        btnCancelar.type = "button";
+        btnCancelar.className = "btn-cancelar-reporte";
+        btnCancelar.dataset.publicacionId = publicacion.id;
+        btnCancelar.textContent = "Cancelar";
+
+        botonesReporte.appendChild(btnConfirmar);
+        botonesReporte.appendChild(btnCancelar);
+
+        formReportar.appendChild(label);
+        formReportar.appendChild(select);
+        formReportar.appendChild(botonesReporte);
+
+        nota.appendChild(formReportar);
+      } else {
+        nota.appendChild(botonesGestion);
+      }
+
       nota.appendChild(seccionComentarios);
     }
 
@@ -1666,3 +1788,155 @@ function renderPublicaciones() {
 
 renderPublicaciones();
 actualizarTextoOrden();
+
+// ── H20: Alternar entre Muro y Moderación ──
+const btnVerMuro = document.getElementById("btn-ver-muro");
+const btnVerModeracion = document.getElementById("btn-ver-moderacion");
+const vistaMuro = document.getElementById("vista-muro");
+const vistaModeracion = document.getElementById("vista-moderacion");
+
+if (btnVerMuro && btnVerModeracion && vistaMuro && vistaModeracion) {
+  btnVerMuro.addEventListener("click", function () {
+    btnVerMuro.classList.add("active");
+    btnVerModeracion.classList.remove("active");
+    vistaMuro.classList.remove("d-none");
+    vistaModeracion.classList.add("d-none");
+    renderPublicaciones();
+  });
+
+  btnVerModeracion.addEventListener("click", function () {
+    btnVerModeracion.classList.add("active");
+    btnVerMuro.classList.remove("active");
+    vistaModeracion.classList.remove("d-none");
+    vistaMuro.classList.add("d-none");
+    renderModeracion();
+  });
+}
+
+function renderModeracion() {
+  const listaReportadas = document.getElementById("lista-reportadas");
+  if (!listaReportadas) return;
+
+  listaReportadas.innerHTML = "";
+
+  const reportadas = publicaciones.filter(function (p) {
+    return p.reportado === true;
+  });
+
+  if (reportadas.length === 0) {
+    listaReportadas.innerHTML = '<p class="mensaje-vacio">No hay publicaciones reportadas en este momento.</p>';
+    return;
+  }
+
+  reportadas.forEach(function (publicacion) {
+    const nota = document.createElement("div");
+    nota.className = "nota mb-3";
+    nota.style.borderLeft = "4px solid #dc3545";
+
+    const encabezado = document.createElement("div");
+    encabezado.className = "nota-encabezado d-flex justify-content-between align-items-center";
+
+    const nombre = document.createElement("p");
+    nombre.className = "nota-nombre mb-0";
+    nombre.textContent = publicacion.nombre;
+
+    const etiquetaPublicacion = normalizarEtiqueta(publicacion.etiqueta);
+    const badgeEtiqueta = document.createElement("span");
+    badgeEtiqueta.className = `badge-etiqueta badge-etiqueta-${etiquetaPublicacion.toLowerCase()}`;
+    badgeEtiqueta.textContent = etiquetaPublicacion;
+
+    const divIzquierda = document.createElement("div");
+    divIzquierda.appendChild(nombre);
+    divIzquierda.appendChild(badgeEtiqueta);
+
+    encabezado.appendChild(divIzquierda);
+
+    const mensaje = document.createElement("p");
+    mensaje.className = "nota-mensaje mt-2";
+    mensaje.textContent = publicacion.mensaje;
+
+    const fecha = document.createElement("p");
+    fecha.className = "nota-fecha";
+    fecha.textContent = formatearFecha(publicacion.fecha);
+
+    const infoReporte = document.createElement("div");
+    infoReporte.className = "alert alert-danger py-1 px-2 mt-2 mb-2";
+    infoReporte.style.fontSize = "0.85rem";
+    infoReporte.innerHTML = `<strong>Motivo del reporte:</strong> ${publicacion.reporte.motivo}`;
+
+    const accionesModeracion = document.createElement("div");
+    accionesModeracion.className = "botones-gestion mt-2";
+
+    const botonDescartar = document.createElement("button");
+    botonDescartar.type = "button";
+    botonDescartar.className = "btn-descartar-reporte-mod";
+    botonDescartar.dataset.publicacionId = publicacion.id;
+    botonDescartar.textContent = "Descartar Reporte";
+
+    const botonEliminar = document.createElement("button");
+    botonEliminar.type = "button";
+    botonEliminar.className = "btn-eliminar-publicacion-mod";
+    botonEliminar.dataset.publicacionId = publicacion.id;
+    botonEliminar.textContent = "Eliminar Publicación";
+
+    accionesModeracion.appendChild(botonDescartar);
+    accionesModeracion.appendChild(botonEliminar);
+
+    nota.appendChild(encabezado);
+    nota.appendChild(mensaje);
+    nota.appendChild(fecha);
+    nota.appendChild(infoReporte);
+    nota.appendChild(accionesModeracion);
+
+    listaReportadas.appendChild(nota);
+  });
+}
+
+function descartarReporte(id) {
+  const publicacion = publicaciones.find(function (item) {
+    return item.id === id;
+  });
+
+  if (publicacion) {
+    publicacion.reportado = false;
+    publicacion.reporte = null;
+    guardarPublicaciones();
+    renderPublicaciones();
+    renderModeracion();
+  }
+}
+
+function eliminarPublicacionDesdeModeracion(id) {
+  const confirmado = confirm("¿Seguro que deseas eliminar esta publicación?");
+
+  if (!confirmado) {
+    return;
+  }
+
+  publicaciones = publicaciones.filter(function (item) {
+    return item.id !== id;
+  });
+
+  guardarPublicaciones();
+  renderPublicaciones();
+  renderModeracion();
+}
+
+const listaReportadas = document.getElementById("lista-reportadas");
+if (listaReportadas) {
+  listaReportadas.addEventListener("click", function (evento) {
+    const botonDescartar = evento.target.closest(".btn-descartar-reporte-mod");
+    if (botonDescartar) {
+      const id = Number(botonDescartar.dataset.publicacionId);
+      descartarReporte(id);
+      return;
+    }
+
+    const botonEliminar = evento.target.closest(".btn-eliminar-publicacion-mod");
+    if (botonEliminar) {
+      const id = Number(botonEliminar.dataset.publicacionId);
+      eliminarPublicacionDesdeModeracion(id);
+      return;
+    }
+  });
+}

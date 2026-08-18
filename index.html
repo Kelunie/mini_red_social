@@ -12,84 +12,109 @@
 
   <div class="container">
 
-    <h1 class="titulo-principal">Red Social del Salón</h1>
-    <p class="text-muted">Escribe tu nombre y comparte un mensaje con tus compañeros.</p>
-
-    <!-- Resumen de Actividad (H10) -->
-    <div class="tarjeta-resumen mb-4" id="resumen-actividad">
-      <h5 class="titulo-resumen">Resumen de Actividad</h5>
-      <div class="row text-center mb-3 pb-3 border-resumen">
-        <div class="col-6">
-          <div class="resumen-item">
-            <span class="resumen-numero" id="total-publicaciones">0</span>
-            <span class="resumen-etiqueta">Publicaciones</span>
-          </div>
-        </div>
-        <div class="col-6">
-          <div class="resumen-item">
-            <span class="resumen-numero" id="total-comentarios">0</span>
-            <span class="resumen-etiqueta">Comentarios</span>
-          </div>
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-3 flex-column flex-sm-row">
+      <div>
+        <h1 class="titulo-principal mb-0">Red Social del Salón</h1>
+        <p class="text-muted mb-0">Escribe tu nombre y comparte un mensaje con tus compañeros.</p>
       </div>
-      <div class="row text-center g-2">
-        <div class="col-3">
-          <div class="resumen-item-mini">
-            <span class="resumen-numero-mini" id="total-likes">0</span>
-            <span class="resumen-etiqueta-mini">👍 Me gusta</span>
-          </div>
-        </div>
-        <div class="col-3">
-          <div class="resumen-item-mini">
-            <span class="resumen-numero-mini" id="total-loves">0</span>
-            <span class="resumen-etiqueta-mini">❤️ Me encanta</span>
-          </div>
-        </div>
-        <div class="col-3">
-          <div class="resumen-item-mini">
-            <span class="resumen-numero-mini" id="total-dislikes">0</span>
-            <span class="resumen-etiqueta-mini">👎 No me gusta</span>
-          </div>
-        </div>
-        <div class="col-3">
-          <div class="resumen-item-mini">
-            <span class="resumen-numero-mini" id="total-angries">0</span>
-            <span class="resumen-etiqueta-mini">😡 Me enoja</span>
-          </div>
-        </div>
+      <div class="btn-group mt-2 mt-sm-0" role="group" aria-label="Navegación principal">
+        <button type="button" class="btn btn-outline-secondary active" id="btn-ver-muro">Muro</button>
+        <button type="button" class="btn btn-outline-danger position-relative" id="btn-ver-moderacion">
+          Moderación
+          <span class="badge bg-danger ms-1" id="badge-total-reportes" style="display: none;">0</span>
+        </button>
       </div>
     </div>
 
-
-    <div class="tarjeta-form mb-4">
-      <form id="form-publicacion">
-        <div class="mb-3">
-          <label for="input-nombre" class="form-label">Nombre</label>
-          <input type="text" class="form-control" id="input-nombre" placeholder="Escribe tu nombre">
+    <!-- Contenedor Vista Muro -->
+    <div id="vista-muro">
+      <!-- Resumen de Actividad (H10) -->
+      <div class="tarjeta-resumen mb-4" id="resumen-actividad">
+        <h5 class="titulo-resumen">Resumen de Actividad</h5>
+        <div class="row text-center mb-3 pb-3 border-resumen">
+          <div class="col-6">
+            <div class="resumen-item">
+              <span class="resumen-numero" id="total-publicaciones">0</span>
+              <span class="resumen-etiqueta">Publicaciones</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="resumen-item">
+              <span class="resumen-numero" id="total-comentarios">0</span>
+              <span class="resumen-etiqueta">Comentarios</span>
+            </div>
+          </div>
         </div>
-
-        <div class="mb-3">
-          <label for="input-mensaje" class="form-label">Mensaje</label>
-          <textarea class="form-control" id="input-mensaje" rows="3" placeholder="Escribe tu mensaje..."></textarea>
+        <div class="row text-center g-2">
+          <div class="col-3">
+            <div class="resumen-item-mini">
+              <span class="resumen-numero-mini" id="total-likes">0</span>
+              <span class="resumen-etiqueta-mini">👍 Me gusta</span>
+            </div>
+          </div>
+          <div class="col-3">
+            <div class="resumen-item-mini">
+              <span class="resumen-numero-mini" id="total-loves">0</span>
+              <span class="resumen-etiqueta-mini">❤️ Me encanta</span>
+            </div>
+          </div>
+          <div class="col-3">
+            <div class="resumen-item-mini">
+              <span class="resumen-numero-mini" id="total-dislikes">0</span>
+              <span class="resumen-etiqueta-mini">👎 No me gusta</span>
+            </div>
+          </div>
+          <div class="col-3">
+            <div class="resumen-item-mini">
+              <span class="resumen-numero-mini" id="total-angries">0</span>
+              <span class="resumen-etiqueta-mini">😡 Me enoja</span>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div class="mb-3">
-          <label for="input-etiqueta" class="form-label">Etiqueta</label>
-          <select class="form-select" id="input-etiqueta">
-            <option value="General" selected>General</option>
-            <option value="Estudio">Estudio</option>
-            <option value="Evento">Evento</option>
-            <option value="Ayuda">Ayuda</option>
-          </select>
-        </div>
 
-        <button type="submit" class="btn-publicar">Publicar</button>
-        <button type="button" id="btn-descartar-borrador" class="btn btn-secondary ms-2">Descartar borrador</button>
-      </form>
+      <div class="tarjeta-form mb-4">
+        <form id="form-publicacion">
+          <div class="mb-3">
+            <label for="input-nombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="input-nombre" placeholder="Escribe tu nombre">
+          </div>
+
+          <div class="mb-3">
+            <label for="input-mensaje" class="form-label">Mensaje</label>
+            <textarea class="form-control" id="input-mensaje" rows="3" placeholder="Escribe tu mensaje..."></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="input-etiqueta" class="form-label">Etiqueta</label>
+            <select class="form-select" id="input-etiqueta">
+              <option value="General" selected>General</option>
+              <option value="Estudio">Estudio</option>
+              <option value="Evento">Evento</option>
+              <option value="Ayuda">Ayuda</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn-publicar">Publicar</button>
+          <button type="button" id="btn-descartar-borrador" class="btn btn-secondary ms-2">Descartar borrador</button>
+        </form>
+      </div>
+
+      <h5 class="titulo-muro">Publicaciones</h5>
+      <div id="lista-publicaciones">
+      </div>
     </div>
 
-    <h5 class="titulo-muro">Publicaciones</h5>
-    <div id="lista-publicaciones">
+    <!-- Contenedor Vista Moderación (H20) -->
+    <div id="vista-moderacion" class="d-none">
+      <div class="tarjeta-moderacion mb-4 p-4 bg-white border border-danger-subtle rounded-3 shadow-sm">
+        <h5 class="titulo-moderacion mb-3 text-danger fw-bold">Panel de Moderación</h5>
+        <p class="text-muted small">Aquí puedes revisar las publicaciones que han sido reportadas por los estudiantes. Tienes la opción de descartar el reporte o eliminar la publicación de manera permanente.</p>
+        <div id="lista-reportadas" class="mt-3">
+          <!-- Las publicaciones reportadas se renderizan aquí -->
+        </div>
+      </div>
     </div>
 
   </div>
