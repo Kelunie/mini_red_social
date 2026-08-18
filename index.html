@@ -15,8 +15,20 @@
     <h1 class="titulo-principal">Red Social del Salón</h1>
     <p class="text-muted">Escribe tu nombre y comparte un mensaje con tus compañeros.</p>
 
-    <!-- Resumen de Actividad (H10) -->
-    <div class="tarjeta-resumen mb-4" id="resumen-actividad">
+    <!-- Navegación de Vistas -->
+    <ul class="nav nav-tabs mb-4" id="vistas-nav">
+      <li class="nav-item">
+        <button class="nav-link active" id="btn-vista-muro" type="button">Muro</button>
+      </li>      
+      <li class="nav-item">
+        <button class="nav-link" id="btn-vista-moderacion" type="button">Moderación</button>
+      </li>
+    </ul>
+
+    <!-- Contenedor Vista Muro -->
+    <div id="vista-muro-container">
+      <!-- Resumen de Actividad (H10) -->
+      <div class="tarjeta-resumen mb-4" id="resumen-actividad">
       <h5 class="titulo-resumen">Resumen de Actividad</h5>
       <div class="row text-center mb-3 pb-3 border-resumen">
         <div class="col-6">
@@ -90,6 +102,16 @@
 
     <h5 class="titulo-muro">Publicaciones</h5>
     <div id="lista-publicaciones">
+    </div>
+
+    </div> <!-- Cierre de #vista-muro-container -->
+
+    <!-- Contenedor Vista Moderación -->
+    <div id="vista-moderacion-container" class="d-none">
+      <h5 class="titulo-muro mb-3">Panel de Moderación</h5>
+      <div id="lista-reportados" class="mt-3">
+        <!-- Las publicaciones reportadas se renderizarán aquí -->
+      </div>
     </div>
 
   </div>

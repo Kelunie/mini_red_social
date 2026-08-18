@@ -145,6 +145,7 @@ function alternarReaccion(id, tipo) {
 
 let publicaciones = normalizarPublicaciones(cargarPublicaciones());
 let publicacionEnEdicionId = null;
+let publicacionEnReporteId = null; // H20: ID de la publicación en proceso de reporte
 let comentarioEnEdicion = null;
 let respuestaActiva = null;
 const LIMITE_MENSAJE = 200;
@@ -767,6 +768,46 @@ function cancelarEdicion() {
 }
 
 listaPublicaciones.addEventListener("click", function (evento) {
+  const botonReportar = evento.target.closest(".btn-reportar");
+  if (botonReportar) {
+    const idReportar = Number(botonReportar.dataset.publicacionId);
+    publicacionEnReporteId = idReportar;
+    renderPublicaciones();
+    return;
+  }
+
+  const botonCancelarReporte = evento.target.closest(".btn-cancelar-reporte");
+  if (botonCancelarReporte) {
+    publicacionEnReporteId = null;
+    renderPublicaciones();
+    return;
+  }
+
+  const botonConfirmarReporte = evento.target.closest(".btn-confirmar-reporte");
+  if (botonConfirmarReporte) {
+    const box = botonConfirmarReporte.closest(".reportar-box");
+    const select = box.querySelector(".select-motivo-reporte");
+    const motivo = select.value;
+    if (!motivo) {
+      alert("Por favor seleccione un motivo de reporte.");
+      return;
+    }
+    const idConfirmar = Number(botonConfirmarReporte.dataset.publicacionId);
+    const publicacion = publicaciones.find(function (item) {
+      return item.id === idConfirmar;
+    });
+    if (publicacion) {
+      publicacion.reporte = {
+        motivo: motivo,
+        fecha: new Date().toISOString()
+      };
+      guardarPublicaciones();
+    }
+    publicacionEnReporteId = null;
+    renderPublicaciones();
+    return;
+  }
+
   const botonFavorito = evento.target.closest(".btn-favorito");
 
   if (botonFavorito) {
@@ -1178,8 +1219,16 @@ function renderPublicaciones() {
     botonEliminar.title = "Eliminar publicación";
     botonEliminar.textContent = "Eliminar";
 
+    const botonReportar = document.createElement("button");
+    botonReportar.type = "button";
+    botonReportar.className = "btn-reportar";
+    botonReportar.dataset.publicacionId = publicacion.id;
+    botonReportar.title = "Reportar publicación";
+    botonReportar.textContent = "Reportar";
+
     botonesGestion.appendChild(botonEditar);
     botonesGestion.appendChild(botonEliminar);
+    botonesGestion.appendChild(botonReportar);
 
     const seccionComentarios = document.createElement("div");
     seccionComentarios.className = "seccion-comentarios";
@@ -1461,6 +1510,13 @@ function renderPublicaciones() {
       nota.appendChild(botonesEdicion);
       nota.appendChild(fecha);
     } else {
+      if (publicacion.reporte) {
+        const alertaReportada = document.createElement("div");
+        alertaReportada.className = "alert alert-warning py-1 px-2 mb-2 small text-dark d-flex align-items-center gap-1";
+        alertaReportada.style.fontSize = "0.78rem";
+        alertaReportada.textContent = `⚠️ Reportada (Motivo: ${publicacion.reporte.motivo})`;
+        nota.appendChild(alertaReportada);
+      }
       nota.appendChild(mensaje);
       nota.appendChild(fecha);
       nota.appendChild(acciones);
@@ -1468,7 +1524,187 @@ function renderPublicaciones() {
       nota.appendChild(seccionComentarios);
     }
 
+    // Formulario de reporte inline (H20)
+    const enReporte = publicacion.id === publicacionEnReporteId;
+    if (enReporte) {
+      const divReporte = document.createElement("div");
+      divReporte.className = "reportar-box mt-3 p-3 border rounded bg-light";
+
+      const label = document.createElement("span");
+      label.className = "d-block mb-1 small fw-bold text-danger";
+      label.textContent = "Seleccione un motivo para reportar:";
+
+      const select = document.createElement("select");
+      select.className = "form-select form-select-sm mb-2 select-motivo-reporte";
+
+      const optDefault = document.createElement("option");
+      optDefault.value = "";
+      optDefault.textContent = "Seleccionar motivo...";
+      select.appendChild(optDefault);
+
+      ["Spam", "Ofensivo", "Otro"].forEach(function (motivo) {
+        const opt = document.createElement("option");
+        opt.value = motivo;
+        opt.textContent = motivo;
+        select.appendChild(opt);
+      });
+
+      const btnConfirmar = document.createElement("button");
+      btnConfirmar.type = "button";
+      btnConfirmar.className = "btn btn-sm btn-danger btn-confirmar-reporte me-2";
+      btnConfirmar.dataset.publicacionId = publicacion.id;
+      btnConfirmar.textContent = "Confirmar";
+
+      const btnCancelar = document.createElement("button");
+      btnCancelar.type = "button";
+      btnCancelar.className = "btn btn-sm btn-secondary btn-cancelar-reporte";
+      btnCancelar.dataset.publicacionId = publicacion.id;
+      btnCancelar.textContent = "Cancelar";
+
+      divReporte.appendChild(label);
+      divReporte.appendChild(select);
+      divReporte.appendChild(btnConfirmar);
+      divReporte.appendChild(btnCancelar);
+
+      nota.appendChild(divReporte);
+    }
+
     listaPublicaciones.appendChild(nota);
+  });
+}
+
+// H20: Lógica para cambiar de vista (Muro <-> Moderación)
+const btnVistaMuro = document.getElementById("btn-vista-muro");
+const btnVistaModeracion = document.getElementById("btn-vista-moderacion");
+const vistaMuroContainer = document.getElementById("vista-muro-container");
+const vistaModeracionContainer = document.getElementById("vista-moderacion-container");
+const listaReportados = document.getElementById("lista-reportados");
+
+if (btnVistaMuro && btnVistaModeracion) {
+  btnVistaMuro.addEventListener("click", function () {
+    btnVistaMuro.classList.add("active");
+    btnVistaModeracion.classList.remove("active");
+    vistaMuroContainer.classList.remove("d-none");
+    vistaModeracionContainer.classList.add("d-none");
+    renderPublicaciones();
+  });
+
+  btnVistaModeracion.addEventListener("click", function () {
+    btnVistaModeracion.classList.add("active");
+    btnVistaMuro.classList.remove("active");
+    vistaMuroContainer.classList.add("d-none");
+    vistaModeracionContainer.classList.remove("d-none");
+    renderModeracion();
+  });
+}
+
+function renderModeracion() {
+  if (!listaReportados) return;
+  listaReportados.innerHTML = "";
+
+  const reportadas = publicaciones.filter(function (p) {
+    return p.reporte;
+  });
+
+  if (reportadas.length === 0) {
+    listaReportados.innerHTML = '<p class="mensaje-vacio">No hay publicaciones reportadas.</p>';
+    return;
+  }
+
+  reportadas.forEach(function (publicacion) {
+    const nota = document.createElement("div");
+    nota.className = "nota mb-3";
+    nota.style.borderLeft = "4px solid #dc3545"; // Borde rojo indicando advertencia
+
+    const encabezado = document.createElement("div");
+    encabezado.className = "nota-encabezado d-flex align-items-center justify-content-between";
+
+    const nombre = document.createElement("p");
+    nombre.className = "nota-nombre mb-0";
+    nombre.textContent = publicacion.nombre;
+
+    const etiquetaPublicacion = normalizarEtiqueta(publicacion.etiqueta);
+    const badgeEtiqueta = document.createElement("span");
+    badgeEtiqueta.className = `badge-etiqueta badge-etiqueta-${etiquetaPublicacion.toLowerCase()}`;
+    badgeEtiqueta.textContent = etiquetaPublicacion;
+
+    const divInfo = document.createElement("div");
+    divInfo.appendChild(nombre);
+    divInfo.appendChild(badgeEtiqueta);
+
+    encabezado.appendChild(divInfo);
+
+    const mensaje = document.createElement("p");
+    mensaje.className = "nota-mensaje mt-2";
+    mensaje.textContent = publicacion.mensaje;
+
+    const fecha = document.createElement("p");
+    fecha.className = "nota-fecha";
+    fecha.textContent = formatearFecha(publicacion.fecha);
+
+    // Caja de reporte
+    const reporteBox = document.createElement("div");
+    reporteBox.className = "alert alert-danger py-2 px-3 mt-2 small";
+    reporteBox.innerHTML = `<strong>Motivo de reporte:</strong> ${publicacion.reporte.motivo}`;
+
+    // Acciones de moderación
+    const acciones = document.createElement("div");
+    acciones.className = "d-flex gap-2 mt-3";
+
+    const btnDescartar = document.createElement("button");
+    btnDescartar.type = "button";
+    btnDescartar.className = "btn btn-sm btn-outline-success btn-descartar-reporte";
+    btnDescartar.dataset.publicacionId = publicacion.id;
+    btnDescartar.textContent = "Descartar reporte";
+
+    const btnEliminar = document.createElement("button");
+    btnEliminar.type = "button";
+    btnEliminar.className = "btn btn-sm btn-danger btn-eliminar-publicacion-moderacion";
+    btnEliminar.dataset.publicacionId = publicacion.id;
+    btnEliminar.textContent = "Eliminar publicación";
+
+    acciones.appendChild(btnDescartar);
+    acciones.appendChild(btnEliminar);
+
+    nota.appendChild(encabezado);
+    nota.appendChild(mensaje);
+    nota.appendChild(fecha);
+    nota.appendChild(reporteBox);
+    nota.appendChild(acciones);
+
+    listaReportados.appendChild(nota);
+  });
+}
+
+if (listaReportados) {
+  listaReportados.addEventListener("click", function (evento) {
+    const btnDescartar = evento.target.closest(".btn-descartar-reporte");
+    if (btnDescartar) {
+      const id = Number(btnDescartar.dataset.publicacionId);
+      const publicacion = publicaciones.find(function (item) {
+        return item.id === id;
+      });
+      if (publicacion) {
+        delete publicacion.reporte;
+        guardarPublicaciones();
+        renderModeracion();
+      }
+      return;
+    }
+
+    const btnEliminar = evento.target.closest(".btn-eliminar-publicacion-moderacion");
+    if (btnEliminar) {
+      const id = Number(btnEliminar.dataset.publicacionId);
+      const confirmado = confirm("¿Seguro que deseas eliminar esta publicación?");
+      if (confirmado) {
+        publicaciones = publicaciones.filter(function (item) {
+          return item.id !== id;
+        });
+        guardarPublicaciones();
+        renderModeracion();
+      }
+      return;
+    }
   });
 }
 
